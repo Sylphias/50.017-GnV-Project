@@ -1,6 +1,7 @@
 let container, renderer, stats, gui, scene;
 let views, freeView, topView;
 let last = performance.now();
+let crowd;
 
 var guiObject = {
   size: 1
@@ -15,6 +16,9 @@ function init() {
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0);
+
+  crowd = new Crowd(10);
+  scene.add(crowd.mesh);
 
   // floor
   scene.add(new THREE.Mesh(
@@ -57,6 +61,7 @@ function animate() {
   if (dt > 1) dt = 1; // safety cap
   last = now;
 
+  crowd.update(dt);
   views.render(scene, renderer);
   stats.update();
 }
