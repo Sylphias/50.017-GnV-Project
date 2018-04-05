@@ -8,7 +8,7 @@ class Human {
     this.omega = 0; // angular velocity
 
     this.zOffset = height / 2;
-    this.geometry = new THREE.CylinderGeometry(radius, radius, height, 3);
+    this.geometry = new THREE.CylinderGeometry(radius, radius, height, 3,2);
 
     this.material = new THREE.MeshLambertMaterial({color: 0xffff00});
     this.mesh = new THREE.Mesh(this.geometry, this.material);
@@ -28,12 +28,12 @@ class Human {
     this.mesh.lookAt(ORIGIN);
   }
 
-  update(dt, pairwiseDist = []) {
+  update(dt, pairwiseDist = [], structMeshes) {
     // torque and force
     let T = 0, F = new THREE.Vector3(0, 0, 0);
 
     F.addScaledVector(this.randDir(), 0.01);
-    F.addScaledVector(this.towards, 0.0001);
+    F.addScaledVector(this.towards, 0.001);
 
     let people = pairwiseDist.reduce((f, h) => {
       let dir = (new THREE.Vector3(0, 0, 0)).copy(h[1]).normalize();
@@ -52,11 +52,47 @@ class Human {
 
     T = (Math.random() - 0.5) * 0.005;
 
-    this.velocity.addScaledVector(F, 1);
+    let {collided, collisionForce} = this.checkCollision(structMeshes);
+    if(collided){
+      this.velocity.addScaledVector(collisionForce, 0.2);
+    }
+    else{
+      this.velocity.addScaledVector(F, 1);
+    }
+
+
     this.mesh.position.addScaledVector(this.velocity, dt);
 
     this.omega += T;
     this.mesh.rotateY(this.omega * dt);
+  }
+
+  // This function checks for collision with any meshes and adds a negative
+  // directional force to the
+  checkCollision(structure){
+
+    for (var vertexIndex = 0; vertexIndex < this.mesh.geometry.vertices.length; vertexIndex++)
+    {
+      var localVertex = this.mesh.geometry.vertices[vertexIndex].clone();
+      var globalVertex = localVertex.applyMatrix4( this.mesh.matrix );
+      var directionVector = globalVertex.sub( this.mesh.position );
+
+      var ray = new THREE.Raycaster( this.mesh.position.clone(), directionVector.clone().normalize() );
+      var collisionResults = ray.intersectObjects( structure.structMeshes );
+      if ( collisionResults.length > 0 && collisionResults[0].distance < directionVector.length() ){
+          // the moment the person hits the wall or another person, he should apply a force in the opposite direction
+          console.log("Hit");
+          // lets do some simple deflection math using face normals
+          var faceNormal = collisionResults[0].face.normal
+          var pointOfImpact = collisionResults[0].point;
+          pointOfImpact.z = 0;
+          var negativeDir = directionVector.reflect(faceNormal);
+          negativeDir.z = 0;
+
+          return {collided:true,collisionForce:negativeDir};
+      }
+    }
+    return {collided:false,collisionForce:new THREE.Vector3()};
   }
 
   randDir() {
@@ -93,9 +129,10 @@ class Crowd {
     });
   }
 
-  update(dt) {
+  update(dt,structureMeshes) {
     this.humans.forEach((h, i) => {
-      h.update(dt, this.pairwiseDistance(h, i));
+
+      h.update(dt, this.pairwiseDistance(h, i),structureMeshes);
       if ( !this.bounds.containsPoint(h.position) ) {
         h.init(this.initPos()); // left bounds, reset
       }

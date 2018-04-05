@@ -1,4 +1,4 @@
-let container, renderer, stats, gui, scene;
+let container, renderer, stats, gui, scene,cubeStructs;
 let views, freeView, topView;
 let last = performance.now();
 let crowd;
@@ -27,7 +27,7 @@ function init() {
   scene.background = new THREE.Color(0);
 
   crowd = new Crowd(scene, bounds, 10);
-
+  cubeStructs = new CubeStructs(scene,bounds);
   form = new Form(scene);
 
   // lights
@@ -81,7 +81,7 @@ function animate() {
   last = now;
 
   form.update();
-  crowd.update(dt);
+  crowd.update(dt,cubeStructs);
   views.render(scene, renderer);
   stats.update();
 }
