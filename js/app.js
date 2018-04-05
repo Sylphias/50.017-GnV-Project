@@ -26,8 +26,7 @@ function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0);
 
-  crowd = new Crowd(10);
-  scene.add(crowd.mesh);
+  crowd = new Crowd(scene, bounds, 10);
 
   form = new Form(scene);
 
