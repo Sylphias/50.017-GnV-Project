@@ -3,6 +3,15 @@ let views, freeView, topView;
 let last = performance.now();
 let crowd;
 
+let siteBounds = [25, 14];
+
+let bounds = new THREE.Box3(
+  new THREE.Vector3(...siteBounds.map((b) => (-b/2)), -1),
+  new THREE.Vector3(...siteBounds.map((b) => (b/2)), 3)
+);
+
+let lights = [[8, 4, 3], [-8, -4, 3]];
+
 var guiObject = {
   size: 1
 };
@@ -20,9 +29,20 @@ function init() {
   crowd = new Crowd(10);
   scene.add(crowd.mesh);
 
+  form = new Form(scene);
+
+  // lights
+  scene.add(new THREE.AmbientLight(0x333333));
+
+  lights.forEach((l) => {
+    let pl = new THREE.PointLight(0xFFFFFF, 0.5, 100, 2);
+    pl.position.set(...l);
+    scene.add(pl);
+  });
+
   // floor
   scene.add(new THREE.Mesh(
-    new THREE.PlaneGeometry(18, 8),
+    new THREE.PlaneGeometry(...siteBounds),
     new THREE.MeshBasicMaterial({color: 0x0f0f0f})
   ));
 
@@ -46,7 +66,7 @@ function init() {
   freeView.setControl(THREE.TrackballControls, renderer.domElement);
   views.add(freeView, 1, 1);
 
-  topView = new TopView(20);
+  topView = new TopView(siteBounds[1]);
   views.add(topView, 0.2, 0.2);
 
   onWindowResize();
@@ -61,6 +81,7 @@ function animate() {
   if (dt > 1) dt = 1; // safety cap
   last = now;
 
+  form.update();
   crowd.update(dt);
   views.render(scene, renderer);
   stats.update();
