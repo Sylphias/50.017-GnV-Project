@@ -47,8 +47,11 @@ function init() {
 
   // scene.add(new THREE.AxesHelper(5));
 
+  guiObject.toggleHelper = () => form.toggleHelper();
+
   gui = new dat.GUI({resizable: false});
   gui.add(guiObject, 'size', 1, 10, 1);
+  gui.add(guiObject, 'toggleHelper');
   gui.close();
 
   stats = new Stats();
@@ -80,7 +83,7 @@ function animate() {
   if (dt > 1) dt = 1; // safety cap
   last = now;
 
-  form.update();
+  form.update(dt);
   crowd.update(dt);
   views.render(scene, renderer);
   stats.update();
