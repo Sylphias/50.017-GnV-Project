@@ -2,41 +2,49 @@ const UP = new THREE.Vector3(0, 0, 1);
 const ORIGIN = new THREE.Vector3(0, 0, 0);
 
 class Human {
-  constructor(position, radius = 0.3, height = 1.6) {
-    this.towards = new THREE.Vector3(0, 0, 0);
-    this.velocity = new THREE.Vector3(0, 0, 0);
+  constructor(position) {
+    this.towards = new THREE.Vector3();
+    this.velocity = new THREE.Vector3();
     this.omega = 0; // angular velocity
 
-    this.zOffset = height / 2;
-    this.geometry = new THREE.CylinderGeometry(radius, radius, height, 3);
+    this.geometry = new THREE.CylinderGeometry(1, 1, 1, 6);
 
     this.material = new THREE.MeshLambertMaterial({color: 0xffff00});
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.mesh.up = UP;
 
-    if (position) this.init(position);
-    this.position = this.mesh.position;
+    this.init(position);
+  }
 
-    // TODO: other attributes
+  get position() {
+    return this.mesh.position;
   }
 
   init(position) {
-    position.z = this.zOffset;
+    position = position || new THREE.Vector3();
     this.velocity.set(0, 0, 0);
-    this.towards.setX(position.x ? 1 : -1);
+    this.towards.setX(position.x < 0 ? 1 : -1);
+    this.omega = 0;
+
+    let h = (Math.random() < 0.8 ? 1.5 : 1) + Math.random() * 0.2;
+    let w = (h > 1.4 ? 0.3 : 0.2) + Math.random() * 0.1;
+    this.mass = 0.5 / (w * w * h);
+
+    this.mesh.scale.set(w, h * 2, w);
     this.mesh.position.set(position.x, position.y, position.z);
     this.mesh.lookAt(ORIGIN);
   }
 
   update(dt, pairwiseDist = []) {
     // torque and force
-    let T = 0, F = new THREE.Vector3(0, 0, 0);
+    let T = 0, F = new THREE.Vector3();
 
     F.addScaledVector(this.randDir(), 0.01);
     F.addScaledVector(this.towards, 0.0001);
+    F.addScaledVector(this.velocity, -0.01);
 
     let people = pairwiseDist.reduce((f, h) => {
-      let dir = (new THREE.Vector3(0, 0, 0)).copy(h[1]).normalize();
+      let dir = (new THREE.Vector3()).copy(h[1]).normalize();
       let mag = 0;
 
       if ( h[2] < 1.5 ) {
@@ -46,13 +54,18 @@ class Human {
       }
 
       return f.addScaledVector(dir, mag);
-    }, new THREE.Vector3(0, 0, 0));
+    }, new THREE.Vector3());
 
     F.addScaledVector(people, 0.05);
 
+    let c = this.form.collide(this.mesh.position);
+    if (c.collided) {
+      //
+    }
+
     T = (Math.random() - 0.5) * 0.005;
 
-    this.velocity.addScaledVector(F, 1);
+    this.velocity.addScaledVector(F, this.mass);
     this.mesh.position.addScaledVector(this.velocity, dt);
 
     this.omega += T;

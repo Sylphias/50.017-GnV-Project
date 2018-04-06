@@ -29,12 +29,12 @@ class Form {
 
   createFloorPoints(geometry, height = 1.6, radius = 0.4) {
     let v = geometry.getAttribute('position').array;
-    let numPoints = v.length / 3, hh = height / 2;
+    let numPoints = v.length / 3;
     let i, f = {}, fps = [];
 
     for (i = 0; i < numPoints; ++i) {
       if (v[i * 3 + 2] > height) continue;
-      let p = new THREE.Vector3(v[i * 3], v[i * 3 + 1], hh);
+      let p = new THREE.Vector3(v[i * 3], v[i * 3 + 1], 0);
       let cp = null;
       if (fps.some((fp, j) => {cp = j; return fp.distanceToSquared(p) < radius;})) {
         if (cp in f) {
