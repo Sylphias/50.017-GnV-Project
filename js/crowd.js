@@ -60,9 +60,21 @@ class Human {
 
     F.addScaledVector(people, this.peopleK);
 
-    let c = this.form.collide(this.mesh.position);
-    if (c.collided) {
-      //
+    let n = this.form.nearest(this.mesh.position);
+    if (n) {
+      let mag = 0, fp = n[0].obj;
+      let dir = (new THREE.Vector3(fp[0], fp[1], 0)).sub(this.mesh.position);
+      dir.normalize();
+
+      if ( n[1] < 0.6 ) {
+        mag = -Math.sqrt(n[1]);
+      } else if ( n[1] < 4 ) {
+        mag = -0.1 * Math.sqrt(n[1]);
+      } else if ( n[1] > 9 ) {
+        mag = 0.5 / n[1];
+      }
+
+      F.addScaledVector(dir, mag * this.formK);
     }
 
     T = (Math.random() - 0.5) * 0.005;
@@ -81,11 +93,13 @@ class Human {
 
 Human.prototype.massMult = 0.5;
 Human.prototype.randWalK = 0.01;
-Human.prototype.towardsK = 0.001;
+Human.prototype.towardsK = 0.02;
 Human.prototype.dampingK = 0.01;
 Human.prototype.peopleK = 0.05;
+Human.prototype.formK = 0.3;
 
 var humanParams = {
+  formK: [0.1, 1, 0.1],
   massMult: [0.001, 1, 0.001],
   randWalK: [0.001, 0.5, 0.001],
   towardsK: [0.001, 0.5, 0.001],

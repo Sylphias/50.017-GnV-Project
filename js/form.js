@@ -4,6 +4,7 @@ class Form {
   constructor(scene) {
     this.size = new THREE.Vector3();
 
+    this.kdtree = null;
     this.floorPoints = [];
     this.floorPointsHelper = new THREE.Group();
     this.floorPointsHelper.visible = false;
@@ -17,14 +18,29 @@ class Form {
       geometry.boundingBox.getSize(this.size);
       geometry.translate(-this.size.x / 2, -this.size.y / 2, 0);
 
-      this.createFloorPoints(geometry);
-
       this.geometry = geometry;
-
       this.mesh = new THREE.Mesh(this.geometry, this.material);
-
       scene.add(this.mesh);
+
+      this.createKdTree(geometry);
+      this.createFloorPoints(geometry);
     });
+  }
+
+  createKdTree(geometry) {
+    let v = new Float32Array(geometry.getAttribute('position').array);
+    let d = (a, b) => (Math.pow(a[0]-b[0],2)+Math.pow(a[1]-b[1],2)+Math.pow(a[2]-b[2],2));
+
+    let measureStart = new Date().getTime();
+    this.kdtree = new THREE.TypedArrayUtils.Kdtree(v, d, 3);
+    console.log('kdtree took', new Date().getTime() - measureStart, 'ms to build');
+  }
+
+  nearest(p) {
+    if (!this.kdtree) return null;
+    let n = this.kdtree.nearest([p.x, p.y, p.z], 1, 10);
+    if (n.length === 0) return null;
+    return n[0];
   }
 
   createFloorPoints(geometry, height = 1.6, radius = 0.4) {
