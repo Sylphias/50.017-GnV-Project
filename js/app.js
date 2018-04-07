@@ -13,7 +13,6 @@ let bounds = new THREE.Box3(
 let lights = [[8, 4, 3], [-8, -4, 3]];
 
 var guiObject = {
-  size: 1
 };
 
 init();
@@ -50,7 +49,12 @@ function init() {
   guiObject.toggleHelper = () => form.toggleHelper();
 
   gui = new dat.GUI({resizable: false});
-  gui.add(guiObject, 'size', 1, 10, 1);
+
+  let guiHuman = gui.addFolder('Humans');
+  Object.keys(humanParams).forEach((k) => {
+    guiHuman.add(Human.prototype, k, ...humanParams[k]);
+  });
+
   gui.add(guiObject, 'toggleHelper');
   gui.close();
 

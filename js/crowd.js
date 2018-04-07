@@ -1,5 +1,6 @@
 const UP = new THREE.Vector3(0, 0, 1);
 const ORIGIN = new THREE.Vector3(0, 0, 0);
+const HTRANS = (new THREE.Matrix4()).makeTranslation(0, 0.5, 0);
 
 class Human {
   constructor(position) {
@@ -7,7 +8,8 @@ class Human {
     this.velocity = new THREE.Vector3();
     this.omega = 0; // angular velocity
 
-    this.geometry = new THREE.CylinderGeometry(1, 1, 1, 6);
+    this.geometry = new THREE.CylinderBufferGeometry(1, 1, 1, 6);
+    this.geometry.applyMatrix(HTRANS);
 
     this.material = new THREE.MeshLambertMaterial({color: 0xffff00});
     this.mesh = new THREE.Mesh(this.geometry, this.material);
@@ -28,9 +30,9 @@ class Human {
 
     let h = (Math.random() < 0.8 ? 1.5 : 1) + Math.random() * 0.2;
     let w = (h > 1.4 ? 0.3 : 0.2) + Math.random() * 0.1;
-    this.mass = 0.5 / (w * w * h);
+    this.mass = w * w * h;
 
-    this.mesh.scale.set(w, h * 2, w);
+    this.mesh.scale.set(w, h, w);
     this.mesh.position.set(position.x, position.y, position.z);
     this.mesh.lookAt(ORIGIN);
   }
@@ -39,9 +41,9 @@ class Human {
     // torque and force
     let T = 0, F = new THREE.Vector3();
 
-    F.addScaledVector(this.randDir(), 0.01);
-    F.addScaledVector(this.towards, 0.0001);
-    F.addScaledVector(this.velocity, -0.01);
+    F.addScaledVector(this.randDir(), this.randWalK);
+    F.addScaledVector(this.towards, this.towardsK);
+    F.addScaledVector(this.velocity, -this.dampingK);
 
     let people = pairwiseDist.reduce((f, h) => {
       let dir = (new THREE.Vector3()).copy(h[1]).normalize();
@@ -56,7 +58,7 @@ class Human {
       return f.addScaledVector(dir, mag);
     }, new THREE.Vector3());
 
-    F.addScaledVector(people, 0.05);
+    F.addScaledVector(people, this.peopleK);
 
     let c = this.form.collide(this.mesh.position);
     if (c.collided) {
@@ -65,7 +67,7 @@ class Human {
 
     T = (Math.random() - 0.5) * 0.005;
 
-    this.velocity.addScaledVector(F, this.mass);
+    this.velocity.addScaledVector(F, this.massMult / this.mass);
     this.mesh.position.addScaledVector(this.velocity, dt);
 
     this.omega += T;
@@ -76,6 +78,20 @@ class Human {
     return (new THREE.Vector3(1, 0, 0)).applyAxisAngle(UP, 2.0 * Math.PI * Math.random());
   }
 }
+
+Human.prototype.massMult = 0.5;
+Human.prototype.randWalK = 0.01;
+Human.prototype.towardsK = 0.001;
+Human.prototype.dampingK = 0.01;
+Human.prototype.peopleK = 0.05;
+
+var humanParams = {
+  massMult: [0.001, 1, 0.001],
+  randWalK: [0.001, 0.5, 0.001],
+  towardsK: [0.001, 0.5, 0.001],
+  dampingK: [0.001, 0.1, 0.001],
+  peopleK: [0.001, 1, 0.001]
+};
 
 class Crowd {
   constructor(scene, bounds, size = 1) {
