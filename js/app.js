@@ -1,5 +1,6 @@
 let container, renderer, stats, gui, scene;
-let views, freeView, topView;
+let views = {};
+let interactiveObjects = [];
 let last = performance.now();
 let crowd;
 
@@ -12,7 +13,8 @@ let bounds = new THREE.Box3(
 
 let lights = [[8, 4, 3], [-8, -4, 3]];
 
-var guiObject = {
+var settings = {
+  currentView: 'default'
 };
 
 init();
@@ -46,8 +48,6 @@ function init() {
 
   // scene.add(new THREE.AxesHelper(5));
 
-  guiObject.toggleHelper = () => form.toggleHelper();
-
   gui = new dat.GUI({resizable: false});
 
   let guiHuman = gui.addFolder('Humans');
@@ -55,7 +55,6 @@ function init() {
     guiHuman.add(Human.prototype, k, ...humanParams[k]);
   });
 
-  gui.add(guiObject, 'toggleHelper');
   gui.close();
 
   stats = new Stats();
@@ -66,17 +65,25 @@ function init() {
   renderer.autoClearColor = false;
   container.appendChild(renderer.domElement);
 
-  views = new Viewports();
-
-  freeView = new FreeView();
+  let topView = new TopView(siteBounds[1]);
+  let freeView = new FreeView();
   freeView.setControl(THREE.TrackballControls, renderer.domElement);
-  views.add(freeView, 1, 1);
 
-  topView = new TopView(siteBounds[1]);
-  views.add(topView, 0.2, 0.2);
+  views.default = new Viewports();
+  views.default.add(freeView, 1, 1);
+  views.default.add(topView , 0.3, 0.3);
+
+  views.free = new Viewports();
+  views.free.add(freeView , 1, 1);
+
+  views.top = new Viewports();
+  views.top.add(topView , 1, 1);
+
+  gui.add(settings, 'currentView', Object.keys(views));
 
   onWindowResize();
   window.addEventListener('resize', onWindowResize, false);
+  window.addEventListener('click', onClick, false);
 }
 
 function animate() {
@@ -89,13 +96,29 @@ function animate() {
 
   form.update(dt);
   crowd.update(dt);
-  views.render(scene, renderer);
+  views[settings.currentView].render(scene, renderer);
   stats.update();
+}
+
+function onClick(event) {
+  let x = event.clientX / window.innerWidth;
+  let y = event.clientY / window.innerHeight;
+
+  let caster = views[settings.currentView].cast(x, y);
+  if (caster) {
+    interactiveObjects.forEach((o) => o.unclick());
+    let h = caster.intersectObjects(interactiveObjects);
+    if (h.length > 0) {
+      let d = h[0], o = h[0].object;
+      delete d.object;
+      o.click(d);
+    }
+  }
 }
 
 function onWindowResize() {
   let sw = window.innerWidth;
   let sh = window.innerHeight;
   renderer.setSize(sw, sh);
-  views.setSize(sw, sh);
+  views[settings.currentView].setSize(sw, sh);
 }

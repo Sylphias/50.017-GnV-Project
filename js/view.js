@@ -44,11 +44,21 @@ class Viewport {
     const sw = window.innerWidth;
     const sh = window.innerHeight;
     this.view = view;
+    this.caster = new THREE.Raycaster();
     this.wRatio = w; this.w = w * sw;
     this.hRatio = h; this.h = h * sh;
     this.xRatio = x; this.x = x * sw;
     this.yRatio = y; this.y = y * sh;
     this.z = z;
+  }
+
+  cast(x, y) {
+    if (x < this.xRatio || x > this.xRatio + this.wRatio ||
+        y < this.yRatio || y > this.yRatio + this.hRatio ) return null;
+    let xr = 2 * (x - this.xRatio) / this.wRatio - 1;
+    let yr = 2 * (this.yRatio - y) / this.hRatio + 1;
+    this.caster.setFromCamera(new THREE.Vector2(xr, yr), this.view.camera);
+    return this.caster;
   }
 
   render(scene, renderer) {
@@ -79,6 +89,12 @@ class Viewports {
     }
     this.views.push(new Viewport(view, w, h, x, y, z));
     this.views.sort((a, b) => (a.z - b.z));
+  }
+
+  cast(x, y) {
+    let caster = null;
+    this.views.slice().reverse().some((v) => {caster = v.cast(x, y); return caster;})
+    return caster;
   }
 
   render(scene, renderer) {
