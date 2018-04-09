@@ -33,7 +33,7 @@ class Human {
     let T = 0, F = new THREE.Vector3(0, 0, 0);
 
     F.addScaledVector(this.randDir(), 0.01);
-    F.addScaledVector(this.towards, 0.001);
+    F.addScaledVector(this.towards, 0.0001);
 
     let people = pairwiseDist.reduce((f, h) => {
       let dir = (new THREE.Vector3(0, 0, 0)).copy(h[1]).normalize();
@@ -54,7 +54,7 @@ class Human {
 
     let {collided, collisionForce} = this.checkCollision(structMeshes);
     if(collided){
-      this.velocity.addScaledVector(collisionForce, 0.2);
+      this.velocity.addScaledVector(collisionForce, 0.4);
     }
     else{
       this.velocity.addScaledVector(F, 1);
@@ -75,12 +75,12 @@ class Human {
     {
       var localVertex = this.mesh.geometry.vertices[vertexIndex].clone();
       var globalVertex = localVertex.applyMatrix4( this.mesh.matrix );
-      var directionVector = globalVertex.sub( this.mesh.position );
+      var directionVector = globalVertex.sub( this.mesh.position ); // direction given from position to vertex
 
       var ray = new THREE.Raycaster( this.mesh.position.clone(), directionVector.clone().normalize() );
       var collisionResults = ray.intersectObjects( structure.structMeshes );
       if ( collisionResults.length > 0 && collisionResults[0].distance < directionVector.length() ){
-          // the moment the person hits the wall or another person, he should apply a force in the opposite direction
+          // the moment the person hits the wall or another person, he should apply a force in an opposing direction
           console.log("Hit");
           // lets do some simple deflection math using face normals
           var faceNormal = collisionResults[0].face.normal
