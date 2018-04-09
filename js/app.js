@@ -5,6 +5,7 @@ let last = performance.now();
 let site, form, crowd;
 
 var settings = {
+  speed: 1,
   currentView: 'default'
 };
 
@@ -64,6 +65,8 @@ function init() {
 
   gui.add(settings, 'currentView', Object.keys(views));
 
+  gui.add(settings, 'speed', {pause: 0, 'x1': 1, 'x2': 2, 'x5': 5});
+
   onWindowResize();
   window.addEventListener('resize', onWindowResize, false);
   window.addEventListener('click', onClick, false);
@@ -76,6 +79,8 @@ function animate() {
   let dt = (now - last) / 1000;
   if (dt > 1) dt = 1; // safety cap
   last = now;
+
+  dt *= settings.speed;
 
   form.update(dt);
   crowd.update(dt);
