@@ -12,7 +12,7 @@ class Form {
 
     this.material = new THREE.MeshLambertMaterial({color: 0xF0F0F0}) ;
 
-    loader.load('../data/hyperbands.stl', (geometry) => {
+    loader.load('data/hyperbands.stl', (geometry) => {
       geometry.scale(0.1, 0.1, 0.1);
       geometry.computeBoundingBox();
       geometry.boundingBox.getSize(this.size);
