@@ -108,18 +108,16 @@ var humanParams = {
 };
 
 class Crowd {
-  constructor(scene, bounds, size = 1) {
+  constructor(scene, size = 1) {
     this.size = size;
-    this.bounds = bounds;
 
     this.humans = Array.from({length: size}).map(() => new Human(this.initPos()));
     this.humans.forEach((h) => scene.add(h.mesh));
   }
 
   initPos() {
-    const ysize = (bounds.max.y - bounds.min.y) * 0.95;
-    let y = Math.random() * ysize + bounds.min.y;
-    let x = this.bounds[Math.random() > 0.5 ? 'min' : 'max'].x * 0.95;
+    let y = this.site.width * Math.random() * 0.95 + this.site.bounds.min.y;
+    let x = this.site.bounds[Math.random() > 0.5 ? 'min' : 'max'].x * 0.95;
     return new THREE.Vector3(x, y, 0);
   }
 
@@ -139,7 +137,7 @@ class Crowd {
   update(dt) {
     this.humans.forEach((h, i) => {
       h.update(dt, this.pairwiseDistance(h, i));
-      if ( !this.bounds.containsPoint(h.position) ) {
+      if ( !this.site.bounds.containsPoint(h.position) ) {
         h.init(this.initPos()); // left bounds, reset
       }
     });
