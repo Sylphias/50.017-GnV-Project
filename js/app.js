@@ -23,10 +23,10 @@ function init() {
   Crowd.prototype.site = site;
 
   form = new Form(scene);
+
   Human.prototype.form = form;
 
   crowd = new Crowd(scene, 10);
-
   gui = new dat.GUI({resizable: false});
 
   let guiSite = gui.addFolder('Site');

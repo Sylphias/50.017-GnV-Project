@@ -24,6 +24,10 @@ class Form {
 
       this.createKdTree(geometry);
       this.createFloorPoints(geometry);
+
+      // Initialize the lights
+      lights = new Lights(scene,this.geometry.getAttribute('position').array);
+
     });
   }
 
