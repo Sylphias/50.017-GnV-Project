@@ -85,7 +85,6 @@ function animate() {
   form.update(dt);
   crowd.update(dt);
   views[settings.currentView].render(scene, renderer);
-  stats.update();
 }
 
 function onClick(event) {

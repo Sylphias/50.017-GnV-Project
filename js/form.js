@@ -11,7 +11,7 @@ class Form {
     scene.add(this.floorPointsHelper);
 
     this.material = new THREE.MeshLambertMaterial({color: 0xF0F0F0}) ;
-
+    this.lightObj = null;
     loader.load('data/hyperbands.stl', (geometry) => {
       geometry.scale(0.1, 0.1, 0.1);
       geometry.computeBoundingBox();
@@ -26,7 +26,7 @@ class Form {
       this.createFloorPoints(geometry);
 
       // Initialize the lights
-      lights = new Lights(scene,this.geometry.getAttribute('position').array);
+      this.lightObj = new Lights(scene,this.geometry.getAttribute('position').array);
 
     });
   }
@@ -102,5 +102,6 @@ class Form {
   }
 
   update(dt) {
+    this.lightObj && this.lightObj.update();
   }
 }

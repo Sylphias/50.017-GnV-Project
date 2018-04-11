@@ -6,38 +6,56 @@ class Lights{
   constructor(scene,meshVertices){
     this.lights = [];
     this.points = [];
+    this.hues = [];
+    // I will figure out a way to remove the need to use Vectors and directly
+    // input values just wanna test first
     for(var i = 0 ; i < meshVertices.length; i = i+3){
       this.points.push(new THREE.Vector3(meshVertices[i],meshVertices[i+1],meshVertices[i+2]));
     }
-    // let counter = -1;
-    // this.points.map((pt)=>{
-    //   counter ++;
-    //   if(counter%100 == 0){return;}
-    //   var light = new THREE.PointLight( this.HsvToHex(counter%360,1,1), 1, 100 );
-    //   light.position.set(pt.x,pt.y,pt.z );
-    //   this.lights.push(light);
-    //   scene.add( light );
-    // });
 
-    //create a blue LineBasicMaterial
-var lineMaterial = new THREE.LineBasicMaterial( { color: 0xffffff } );
-    for(let x = 1 ; x < 4;x++){
-      let pt = this.points[100*x];
-      let hue = 100*x;
-      let color = new THREE.Color("hsl("+hue+",50%,50%)");
 
-      let light = new THREE.PointLight( color, 1, 100 );
-      let lGeo = new THREE.Geometry();
-      lGeo.vertices.push(new THREE.Vector3(0,0,0));
-      lGeo.vertices.push(new THREE.Vector3(pt.x,pt.y,pt.z));
-      var line = new THREE.Line(lGeo,lineMaterial);
-      scene.add(line);
+    let counter = -1;
+    // console.log(this.points.length);
+    this.points.map((pt)=>{
+      counter ++;
+      if(counter%2500 != 0){return;}
+      // this.DrawDebugLine(scene,pt);
+      let color = new THREE.Color("hsl("+counter%360+",100%,50%)");
+      let light = new THREE.PointLight( color, 1, 5,2 );
       light.position.set(pt.x,pt.y,pt.z );
       this.lights.push(light);
+      this.hues.push(counter%360);
       scene.add(light);
-    }
+    });
+
+
+    //create a blue LineBasicMaterial
+    // for(let x = 1 ; x < 4;x++){
+    //   let pt = this.points[100*x];
+    //   let hue = 100*x;
+    //   let color = new THREE.Color("hsl("+hue+",50%,50%)");
+    //
+    //   let light = new THREE.PointLight( color, 1, 100 );
+    //   let lGeo = new THREE.Geometry();
+    //   lGeo.vertices.push(new THREE.Vector3(0,0,0));
+    //   lGeo.vertices.push(new THREE.Vector3(pt.x,pt.y,pt.z));
+    //   var line = new THREE.Line(lGeo,lineMaterial);
+    //   scene.add(line);
+    //   light.position.set(pt.x,pt.y,pt.z );
+    //   this.lights.push(light);
+    //   scene.add(light);
+    // }
 
     console.log("done");
+  }
+
+  DrawDebugLine(scene,pt){
+    let lineMaterial = new THREE.LineBasicMaterial( { color: 0xffffff } );
+    let lGeo = new THREE.Geometry();
+    lGeo.vertices.push(new THREE.Vector3(0,0,0));
+    lGeo.vertices.push(new THREE.Vector3(pt.x,pt.y,pt.z));
+    var line = new THREE.Line(lGeo,lineMaterial);
+    scene.add(line);
   }
 
   /** Function to convert HSV -> hex Values
@@ -66,5 +84,15 @@ var lineMaterial = new THREE.LineBasicMaterial( { color: 0xffffff } );
   ComponentToHex(c) {
     let hex = c.toString(16);
     return hex.length == 1 ? "0" + hex : hex;
+  }
+
+
+  update(){
+    for(let i=0;i<this.lights.length;i++){
+      console.log(this.hues[i]);
+      this.hues[i]=(this.hues[i]+3)%360
+      let color = new THREE.Color("hsl("+this.hues[i]+",100%,50%)");
+      this.lights[i].color = color;
+    }
   }
 }
