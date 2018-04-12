@@ -14,6 +14,10 @@ class Human {
     this.material = new THREE.MeshLambertMaterial({color: 0xffff00});
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.mesh.up = UP;
+    this.mesh.isHuman = true;
+
+    this.mesh.unclick = () => {};
+    this.mesh.click = () => {};
 
     this.init(position);
   }
@@ -112,7 +116,10 @@ class Crowd {
     this.size = size;
 
     this.humans = Array.from({length: size}).map(() => new Human(this.initPos()));
-    this.humans.forEach((h) => scene.add(h.mesh));
+    this.humans.forEach((h) => {
+      scene.add(h.mesh);
+      this.interactiveObjects.push(h.mesh);
+    });
   }
 
   initPos() {

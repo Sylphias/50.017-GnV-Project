@@ -3,6 +3,8 @@ let views = {};
 let interactiveObjects = [];
 let last = performance.now();
 let site, form, crowd;
+let strucView;
+let povView;
 
 var settings = {
   speed: 1,
@@ -24,6 +26,9 @@ function init() {
 
   form = new Form(scene);
   Human.prototype.form = form;
+
+  form.interactiveObjects = interactiveObjects;
+  Crowd.prototype.interactiveObjects = interactiveObjects;
 
   crowd = new Crowd(scene, 10);
 
@@ -52,6 +57,8 @@ function init() {
   let topView = new TopView(site.width);
   let freeView = new FreeView();
   freeView.setControl(THREE.TrackballControls, renderer.domElement);
+  povView = new PovView();
+  strucView = new StrucView();
 
   views.default = new Viewports();
   views.default.add(freeView, 1, 1);
@@ -63,7 +70,13 @@ function init() {
   views.top = new Viewports();
   views.top.add(topView , 1, 1);
 
-  gui.add(settings, 'currentView', Object.keys(views));
+  views.pov = new Viewports();
+  views.pov.add(povView, 1, 1);
+
+  views.struc = new Viewports();
+  views.struc.add(strucView, 1, 1);
+
+  gui.add(settings, 'currentView', Object.keys(views)).listen();
 
   gui.add(settings, 'speed', {pause: 0, 'x1': 1, 'x2': 2, 'x5': 5});
 
@@ -100,6 +113,19 @@ function onClick(event) {
       let d = h[0], o = h[0].object;
       delete d.object;
       o.click(d);
+      if (o.isHuman){
+        settings.currentView = 'pov';
+        povView.mesh = o;
+      }
+      else{
+        settings.currentView = 'struc';
+        let newDir = (new THREE.Vector3()).copy(caster.ray.direction).negate().normalize();
+        let newPos = (new THREE.Vector3()).copy(h[0].point).addScaledVector(newDir, 0.01);
+        newDir.z = 0;
+        let newLook = (new THREE.Vector3()).copy(newPos).add(newDir);
+        strucView.camera.position.set(newPos.x, newPos.y, newPos.z);
+        strucView.camera.lookAt(newLook);
+      }
     }
   }
 }

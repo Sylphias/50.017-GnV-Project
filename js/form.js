@@ -20,11 +20,23 @@ class Form {
 
       this.geometry = geometry;
       this.mesh = new THREE.Mesh(this.geometry, this.material);
+      this.mesh.unclick = () => {};
+      this.mesh.click = () => {};
+      this.mesh.isHuman = false;
+      this.interactiveObjects.push(this.mesh);
       scene.add(this.mesh);
 
       this.createKdTree(geometry);
       this.createFloorPoints(geometry);
     });
+  }
+
+  unclick(){
+
+  }
+
+  click(){
+
   }
 
   createKdTree(geometry) {

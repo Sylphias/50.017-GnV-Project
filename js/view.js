@@ -39,6 +39,46 @@ class FreeView {
   }
 }
 
+class PovView {
+  constructor(fov = 75, near = 1, far = 100, pos = new THREE.Vector3(0, 0, 0)) {
+    this.camera = new THREE.PerspectiveCamera(fov, 1, near, far);
+    this.camera.position.set(pos.x, pos.y, pos.z);
+    this.camera.up = new THREE.Vector3(0,0,1);
+    this.mesh = null;
+    this.control = null;
+  }
+
+  update() {
+    let pos = new THREE.Vector3(this.mesh.position.x, this.mesh.position.y, 1.5);
+    let rot = this.mesh.rotation;
+    this.camera.position.set(pos.x, pos.y, pos.z);
+    //this.camera.setRotationFromEuler(new THREE.Euler(0, 0, rot.z,'XYZ'));
+    this.camera.lookAt(new THREE.Vector3(0,0,0));
+  }
+
+  resize(aspect) {
+    this.camera.aspect = aspect;
+    this.camera.updateProjectionMatrix();
+  }
+}
+
+class StrucView {
+  constructor(fov = 75, near = 1, far = 100, pos = new THREE.Vector3(0, 0, 0)) {
+    this.camera = new THREE.PerspectiveCamera(fov, 1, near, far);
+    this.camera.position.set(pos.x, pos.y, pos.z);
+    this.camera.up = new THREE.Vector3(0,0,1);
+    this.control = null;
+  }
+
+  update() {
+  }
+
+  resize(aspect) {
+    this.camera.aspect = aspect;
+    this.camera.updateProjectionMatrix();
+  }
+}
+
 class Viewport {
   constructor(view, w, h, x = 0, y = 0, z = 0) {
     const sw = window.innerWidth;
