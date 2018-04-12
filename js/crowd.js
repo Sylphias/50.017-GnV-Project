@@ -3,7 +3,7 @@ const ORIGIN = new THREE.Vector3(0, 0, 0);
 const HTRANS = (new THREE.Matrix4()).makeTranslation(0, 0.5, 0);
 
 class Human {
-  constructor(position) {
+  constructor() {
     this.towards = new THREE.Vector3();
     this.velocity = new THREE.Vector3();
     this.omega = 0; // angular velocity
@@ -14,12 +14,15 @@ class Human {
     this.material = new THREE.MeshLambertMaterial({color: 0xffff00});
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.mesh.up = UP;
-
-    this.init(position);
+    this.mesh.visible = false;
   }
 
   get position() {
     return this.mesh.position;
+  }
+
+  get active() {
+    return this.mesh.visible;
   }
 
   init(position) {
@@ -35,6 +38,11 @@ class Human {
     this.mesh.scale.set(w, h, w);
     this.mesh.position.set(position.x, position.y, position.z);
     this.mesh.lookAt(ORIGIN);
+    this.mesh.visible = true;
+  }
+
+  remove() {
+    this.mesh.visible = false;
   }
 
   update(dt, pairwiseDist = []) {
@@ -110,9 +118,27 @@ var humanParams = {
 class Crowd {
   constructor(scene, size = 1) {
     this.size = size;
+    this.scene = scene;
 
-    this.humans = Array.from({length: size}).map(() => new Human(this.initPos()));
-    this.humans.forEach((h) => scene.add(h.mesh));
+    this.lastSpawn = 0;
+    this.minSpawnTiming = 3.5;
+    this.maxSpawnTiming = 10;
+
+    this.humans = Array.from({length: size}).map(() => this.newHuman());
+  }
+
+  get active() {
+    return this.humans.filter((h) => h.active);
+  }
+
+  get inactive() {
+    return this.humans.filter((h) => !h.active);
+  }
+
+  newHuman() {
+    let h = new Human();
+    this.scene.add(h.mesh);
+    return h;
   }
 
   initPos() {
@@ -122,7 +148,7 @@ class Crowd {
   }
 
   excReduce(h_id, initalValue, func) {
-    return this.humans.reduce((acc, h, i) => (i === h_id) ? acc : func(acc, h, i), initalValue);
+    return this.active.reduce((acc, h, i) => (i === h_id) ? acc : func(acc, h, i), initalValue);
   }
 
   pairwiseDistance(h, h_id) {
@@ -134,12 +160,25 @@ class Crowd {
     });
   }
 
+  spawnTime() {
+    let now = performance.now();
+    let passed = now - this.lastSpawn;
+    let spawnChance = (passed - this.minSpawnTiming * 1000) / this.maxSpawnTiming / 1000;
+    let spawn = Math.random() < spawnChance;
+    if ( spawn ) this.lastSpawn = now;
+    return spawn;
+  }
+
   update(dt) {
-    this.humans.forEach((h, i) => {
+    this.active.forEach((h, i) => {
       h.update(dt, this.pairwiseDistance(h, i));
       if ( !this.site.bounds.containsPoint(h.position) ) {
         h.init(this.initPos()); // left bounds, reset
       }
     });
+
+    if ( this.inactive && this.spawnTime() ) {
+      this.inactive[0].init(this.initPos());
+    }
   }
 }
