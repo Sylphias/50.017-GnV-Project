@@ -25,18 +25,27 @@ class Human {
     return this.mesh.visible;
   }
 
-  init(position) {
-    position = position || new THREE.Vector3();
+  getY() {
+    return this.site.width * Math.random() * 0.95 + this.site.bounds.min.y;
+  }
+
+  getX(forward) {
+    return this.site.bounds[forward ? 'min' : 'max'].x * 0.95;
+  }
+
+  init() {
     this.velocity.set(0, 0, 0);
-    this.towards.setX(position.x < 0 ? 1 : -1);
     this.omega = 0;
 
     let h = (Math.random() < 0.8 ? 1.5 : 1) + Math.random() * 0.2;
     let w = (h > 1.4 ? 0.3 : 0.2) + Math.random() * 0.1;
     this.mass = w * w * h;
 
+    let forward = Math.random() > 0.5;
+    this.towards.set(this.getX(!forward), this.getY(), 0);
+
     this.mesh.scale.set(w, h, w);
-    this.mesh.position.set(position.x, position.y, position.z);
+    this.mesh.position.set(this.getX(forward), this.getY(), 0);
     this.mesh.lookAt(ORIGIN);
     this.mesh.visible = true;
   }
@@ -46,12 +55,19 @@ class Human {
   }
 
   update(dt, pairwiseDist = []) {
+    if ( ! this.site.bounds.containsPoint(this.position) ) {
+      this.remove(); // left bounds
+    }
+
     // torque and force
     let T = 0, F = new THREE.Vector3();
 
     F.addScaledVector(this.randDir(), this.randWalK);
-    F.addScaledVector(this.towards, this.towardsK);
     F.addScaledVector(this.velocity, -this.dampingK);
+
+    let towardsDir = (new THREE.Vector3()).subVectors(this.towards, this.position);
+    towardsDir.normalize();
+    F.addScaledVector(towardsDir, this.towardsK);
 
     let people = pairwiseDist.reduce((f, h) => {
       let dir = (new THREE.Vector3()).copy(h[1]).normalize();
@@ -141,12 +157,6 @@ class Crowd {
     return h;
   }
 
-  initPos() {
-    let y = this.site.width * Math.random() * 0.95 + this.site.bounds.min.y;
-    let x = this.site.bounds[Math.random() > 0.5 ? 'min' : 'max'].x * 0.95;
-    return new THREE.Vector3(x, y, 0);
-  }
-
   excReduce(h_id, initalValue, func) {
     return this.active.reduce((acc, h, i) => (i === h_id) ? acc : func(acc, h, i), initalValue);
   }
@@ -172,13 +182,10 @@ class Crowd {
   update(dt) {
     this.active.forEach((h, i) => {
       h.update(dt, this.pairwiseDistance(h, i));
-      if ( !this.site.bounds.containsPoint(h.position) ) {
-        h.init(this.initPos()); // left bounds, reset
-      }
     });
 
     if ( this.inactive && this.spawnTime() ) {
-      this.inactive[0].init(this.initPos());
+      this.inactive[0].init();
     }
   }
 }

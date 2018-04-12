@@ -20,7 +20,7 @@ function init() {
   scene.background = new THREE.Color(0);
 
   site = new Site(scene);
-  Crowd.prototype.site = site;
+  Human.prototype.site = site;
 
   form = new Form(scene);
   Human.prototype.form = form;
