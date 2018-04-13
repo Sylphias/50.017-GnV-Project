@@ -56,7 +56,7 @@ class PovView {
     let rot = this.mesh.rotation;
     this.camera.position.set(pos.x, pos.y, pos.z);
     //this.camera.setRotationFromEuler(new THREE.Euler(0, 0, rot.z,'XYZ'));
-    this.camera.lookAt(new THREE.Vector3(0,0,0));
+    this.camera.lookAt(new THREE.Vector3(0,0,1.5));
   }
 
   resize(aspect) {

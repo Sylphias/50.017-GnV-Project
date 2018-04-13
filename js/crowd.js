@@ -8,7 +8,7 @@ class Human {
     this.velocity = new THREE.Vector3();
     this.omega = 0; // angular velocity
 
-    this.geometry = new THREE.CylinderBufferGeometry(1, 1, 1, 6);
+    this.geometry = new THREE.CylinderBufferGeometry(1, 1, 1, 16);
     this.geometry.applyMatrix(HTRANS);
 
     this.material = new THREE.MeshLambertMaterial({color: 0xffff00});

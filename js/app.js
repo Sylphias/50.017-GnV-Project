@@ -127,9 +127,13 @@ function onClick(event) {
         }
         else{
           settings.currentView = 'struc';
-          let newDir = (new THREE.Vector3()).copy(caster.ray.direction).negate().normalize();
+          // let newDir = (new THREE.Vector3()).copy(caster.ray.direction).negate().normalize();
+          // let newPos = (new THREE.Vector3()).copy(h[0].point).addScaledVector(newDir, 0.001);
+          // let newAim = (new THREE.Vector3()).copy(h[0].point).addScaledVector(newDir, 0.002);
+          let newDir = (new THREE.Vector3()).copy(h[0].face.normal).normalize();
           let newPos = (new THREE.Vector3()).copy(h[0].point).addScaledVector(newDir, 0.001);
           let newAim = (new THREE.Vector3()).copy(h[0].point).addScaledVector(newDir, 0.002);
+
           newDir.z = 0;
           let newLook = (new THREE.Vector3()).copy(newPos).add(newDir);
           strucView.camera.position.set(newPos.x, newPos.y, newPos.z);
@@ -146,5 +150,6 @@ function onWindowResize() {
   let sw = window.innerWidth;
   let sh = window.innerHeight;
   renderer.setSize(sw, sh);
-  views[settings.currentView].setSize(sw, sh);
+  //views[settings.currentView].setSize(sw, sh);
+  Object.keys(views).forEach((k) => views[k].setSize(sw, sh));
 }
