@@ -111,9 +111,7 @@ function onClick(event) {
   let x = event.clientX / window.innerWidth;
   let y = event.clientY / window.innerHeight;
 
-  console.log(Math.sqrt(Math.pow(x - startX,2) + Math.pow(y - startY,2)));
-
-  if (Math.sqrt(Math.pow(x - startX,2) + Math.pow(y - startY,2)) < 0.01) {
+  if (Math.sqrt(Math.pow(x - startX, 2) + Math.pow(y - startY, 2)) < 0.01) {
 
     let caster = views[settings.currentView].cast(x, y);
     if (caster) {
