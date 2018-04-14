@@ -72,9 +72,9 @@ class Form {
     });
   }
 
-  createNavMesh(border = 0.2, resolution = 120) {
+  createNavMesh(border = 0.7, resolution = 80) {
     let bb = this.geometry.boundingBox;
-    let larg = 1 + border;
+    let larg = 2;
     let minx = bb.min.x * larg,
         miny = bb.min.y * larg,
         maxx = bb.max.x * larg,
@@ -96,11 +96,10 @@ class Form {
           return p;
         }))
       ));
-
       return shape;
     });
 
-    this.navMesh = new THREE.ShapeBufferGeometry(navMeshShapes[0]);
+    this.navMesh = new THREE.ShapeGeometry(navMeshShapes[0]);
   }
 
   createHelper(geometry, material) {
