@@ -26,7 +26,7 @@ class Form {
       this.createFloorPoints(geometry);
 
       // Initialize the lights
-      this.lightObj = new Lights(scene,this.geometry.getAttribute('position').array);
+      this.lightObj = new Lights(scene,this.geometry,0.1,0.3);
 
     });
   }
