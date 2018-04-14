@@ -57,6 +57,12 @@ class Human {
   update(dt, pairwiseDist = []) {
     if ( ! this.site.bounds.containsPoint(this.position) ) {
       this.remove(); // left bounds
+      return;
+    }
+
+    if ( this.towards.distanceTo(this.position) < 0.1 ) {
+      this.remove(); // reached goal
+      return;
     }
 
     // torque and force
@@ -71,43 +77,58 @@ class Human {
 
     let people = pairwiseDist.reduce((f, h) => {
       let dir = (new THREE.Vector3()).copy(h[1]).normalize();
-      let mag = 0;
-
-      if ( h[2] < 1.5 ) {
-        mag = -Math.sqrt(h[2]);
-      } else if ( h[2] > 4 ) {
-        mag = 0.5 / h[2];
-      }
-
-      return f.addScaledVector(dir, mag);
+      return f.addScaledVector(dir, this.personForce(h[2]));
     }, new THREE.Vector3());
-
     F.addScaledVector(people, this.peopleK);
 
-    let n = this.form.nearest(this.mesh.position);
+    let n = this.form.nearest(this.position), formDir;
     if (n) {
-      let mag = 0, fp = n[0].obj;
-      let dir = (new THREE.Vector3(fp[0], fp[1], 0)).sub(this.mesh.position);
-      dir.normalize();
-
-      if ( n[1] < 0.6 ) {
-        mag = -Math.sqrt(n[1]);
-      } else if ( n[1] < 4 ) {
-        mag = -0.1 * Math.sqrt(n[1]);
-      } else if ( n[1] > 9 ) {
-        mag = 0.5 / n[1];
-      }
-
-      F.addScaledVector(dir, mag * this.formK);
+      let fp = n[0].obj;
+      formDir = new THREE.Vector3(fp[0], fp[1], 0);
+      formDir.sub(this.position).normalize();
+      F.addScaledVector(formDir, this.formForce(n[1]) * this.formK);
+    } else {
+      formDir = ORIGIN;
     }
 
     T = (Math.random() - 0.5) * 0.005;
 
     this.velocity.addScaledVector(F, this.massMult / this.mass);
+
+    let speed = this.velocity.length();
+    if ( speed < this.minSpeed ) {
+      this.velocity.set(0, 0, 0);
+    } else if ( speed > this.maxSpeed ) {
+      this.velocity.multiplyScalar(this.maxSpeed/speed);
+      speed = this.maxSpeed;
+    }
+
     this.mesh.position.addScaledVector(this.velocity, dt);
 
     this.omega += T;
     this.mesh.rotateY(this.omega * dt);
+  }
+
+  personForce(distSq) {
+    let mag = 0;
+    if ( distSq < 1.5 ) {
+      mag = -Math.sqrt(distSq);
+    } else if ( distSq > 4 ) {
+      mag = 0.5 / distSq;
+    }
+    return mag;
+  }
+
+  formForce(distSq) {
+    let mag = 0;
+    if ( distSq < 0.6 ) {
+      mag = -Math.sqrt(distSq);
+    } else if ( distSq < 1 ) {
+      mag = -0.1 * Math.sqrt(distSq);
+    } else if ( distSq > 9 ) {
+      mag = 0.5 / distSq;
+    }
+    return mag;
   }
 
   randDir() {
@@ -115,6 +136,8 @@ class Human {
   }
 }
 
+Human.prototype.minSpeed = 0.05;
+Human.prototype.maxSpeed = 1.0;
 Human.prototype.massMult = 0.5;
 Human.prototype.randWalK = 0.01;
 Human.prototype.towardsK = 0.02;
