@@ -180,11 +180,13 @@ class Crowd {
   }
 
   update(dt) {
+    if ( ! this.scene.ready ) return;
+
     this.active.forEach((h, i) => {
       h.update(dt, this.pairwiseDistance(h, i));
     });
 
-    if ( this.inactive && this.spawnTime() ) {
+    if ( this.inactive.length > 0 && this.spawnTime() ) {
       this.inactive[0].init();
     }
   }

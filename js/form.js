@@ -28,6 +28,8 @@ class Form {
       this.createContours(geometry);
       this.createNavMesh();
       this.createHelper();
+
+      scene.ready = true;
     });
   }
 

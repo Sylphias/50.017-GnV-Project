@@ -18,6 +18,7 @@ function init() {
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0);
+  scene.ready = false;
 
   site = new Site(scene);
   Human.prototype.site = site;
