@@ -1,12 +1,12 @@
 const UP = new THREE.Vector3(0, 0, 1);
+const RIGHT = new THREE.Vector3(1, 0, 0);
 const ORIGIN = new THREE.Vector3(0, 0, 0);
-const HTRANS = (new THREE.Matrix4()).makeTranslation(0, 0.5, 0);
+const HTRANS = (new THREE.Matrix4()).makeRotationX(Math.PI/2).setPosition(new THREE.Vector3(0, 0, 0.5));
 
 class Human {
   constructor() {
     this.towards = new THREE.Vector3();
     this.velocity = new THREE.Vector3();
-    this.omega = 0; // angular velocity
 
     this.geometry = new THREE.CylinderBufferGeometry(1, 1, 1, 6);
     this.geometry.applyMatrix(HTRANS);
@@ -35,7 +35,6 @@ class Human {
 
   init() {
     this.velocity.set(0, 0, 0);
-    this.omega = 0;
 
     let h = (Math.random() < 0.8 ? 1.5 : 1) + Math.random() * 0.2;
     let w = (h > 1.4 ? 0.3 : 0.2) + Math.random() * 0.1;
@@ -44,9 +43,9 @@ class Human {
     let forward = Math.random() > 0.5;
     this.towards.set(this.getX(!forward), this.getY(), 0);
 
-    this.mesh.scale.set(w, h, w);
+    this.mesh.scale.set(w, w, h);
     this.mesh.position.set(this.getX(forward), this.getY(), 0);
-    this.mesh.lookAt(ORIGIN);
+    this.mesh.rotation.set(0, 0, forward > 0.5 ? 0 : Math.PI);
     this.mesh.visible = true;
   }
 
@@ -91,8 +90,6 @@ class Human {
       formDir = ORIGIN;
     }
 
-    T = (Math.random() - 0.5) * 0.005;
-
     this.velocity.addScaledVector(F, this.massMult / this.mass);
 
     let speed = this.velocity.length();
@@ -105,8 +102,29 @@ class Human {
 
     this.mesh.position.addScaledVector(this.velocity, dt);
 
-    this.omega += T;
-    this.mesh.rotateY(this.omega * dt);
+    let lookPos = new THREE.Vector3();
+    if ( this.velocity.dot(formDir) > 0 ) {
+      let speedRatio = (speed - this.minSpeed) / this.maxSpeed;
+      lookPos.addScaledVector(this.velocity, speedRatio);
+      lookPos.addScaledVector(formDir, 1 - speedRatio);
+    } else {
+      lookPos.add(this.velocity);
+    }
+
+    let curRot = this.mesh.rotation.z;
+    let tarRot = lookPos.angleTo(RIGHT);
+    let rotation = tarRot - curRot;
+    if (rotation <= -Math.PI) {
+      rotation += Math.PI;
+    } else if (rotation >= Math.PI) {
+      rotation -= Math.PI;
+    }
+    if ( Math.abs(rotation) > this.maxSpin ) {
+      rotation = Math.sign(rotation) * this.maxSpin;
+    }
+    if (rotation) {
+      this.mesh.rotation.set(0, 0, curRot + rotation * dt);
+    }
   }
 
   personForce(distSq) {
@@ -136,6 +154,7 @@ class Human {
   }
 }
 
+Human.prototype.maxSpin = 0.5;
 Human.prototype.minSpeed = 0.05;
 Human.prototype.maxSpeed = 1.0;
 Human.prototype.massMult = 0.5;
