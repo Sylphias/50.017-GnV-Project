@@ -44,7 +44,8 @@ class Form {
 
   nearest(p) {
     if (!this.kdtree) return null;
-    let n = this.kdtree.nearest([p.x, p.y, p.z], 1, 10);
+    if ( p.isVector3 ) { p = [p.x, p.y, p.z]; }
+    let n = this.kdtree.nearest(p, 1, 10);
     if (n.length === 0) return null;
     return n[0];
   }
@@ -74,7 +75,7 @@ class Form {
     });
   }
 
-  createNavMesh(border = 0.7, resolution = 80) {
+  createNavMesh(border = 0.2, resolution = 0.3) {
     let bb = this.geometry.boundingBox;
     let larg = 2;
     let minx = bb.min.x * larg,
@@ -82,26 +83,55 @@ class Form {
         maxx = bb.max.x * larg,
         maxy = bb.max.y * larg;
 
-    let navMeshShapes = this.contours.map((contour) => {
-      let shape = new THREE.Shape([
-        new THREE.Vector2(minx, miny),
-        new THREE.Vector2(minx, maxy),
-        new THREE.Vector2(maxx, maxy),
-        new THREE.Vector2(maxx, miny)
-      ]);
-      shape.closePath();
+    let i, j, x, y, n, a, b, c, d, idx;
+    let xw = 0, yw = 0;
+    let points = [];
+    this.navMesh = new THREE.Geometry();
 
-      shape.holes.push(...contour.map((c) =>
-        new THREE.Path(Array.from({length: resolution}, (x, i) => {
-          let t = i/resolution, m = c.getTangent(t), p = c.getPoint(t);
-          p.addScaledVector(new THREE.Vector2(m.y, -m.x), border);
-          return p;
-        }))
-      ));
-      return shape;
-    });
+    x = minx;
+    while (x < maxx) {
+      y = miny;
+      while (y < maxy) {
+        n = this.nearest([x, y, 0.8]);
+        if (n !== null && n[1] < border) {
+          points.push(new THREE.Vector3(x, y, 1));
+        } else {
+          points.push(new THREE.Vector3(x, y, 0));
+        }
+        if (xw === 0){ ++yw; }
+        y += resolution;
+      }
+      ++xw;
+      x += resolution;
+    }
 
-    this.navMesh = new THREE.ShapeGeometry(navMeshShapes[0]);
+    this.navMesh.setFromPoints(points);
+
+    for (i = 0; i < xw - 1; ++i) {
+      idx = i * yw;
+      for (j = 0; j < yw - 1; ++j) {
+        a = idx + j;
+        b = idx + j + 1;
+        c = idx + j + yw;
+        d = idx + j + yw + 1;
+        n = [a, b, c, d].map((f) => points[f].z < 0.5);
+
+        if (n.reduce((_, v) => _ + v, 0) < 3) continue;
+
+        if (n.every((f) => f)) {
+          this.navMesh.faces.push(new THREE.Face3(a, c, b));
+          this.navMesh.faces.push(new THREE.Face3(b, c, d));
+        } else if (!n[0]) {
+          this.navMesh.faces.push(new THREE.Face3(b, c, d));
+        } else if (!n[1]) {
+          this.navMesh.faces.push(new THREE.Face3(a, c, d));
+        } else if (!n[2]) {
+          this.navMesh.faces.push(new THREE.Face3(a, d, b));
+        } else {
+          this.navMesh.faces.push(new THREE.Face3(a, c, b));
+        }
+      }
+    }
   }
 
   createHelper(geometry, material) {
