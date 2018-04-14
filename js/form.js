@@ -5,7 +5,9 @@ class Form {
     this.size = new THREE.Vector3();
 
     this.kdtree = null;
-    this.floorPoints = [];
+    this.contours = [];
+    this.navMesh = null;
+
     this.floorPointsHelper = new THREE.Group();
     this.floorPointsHelper.visible = false;
     scene.add(this.floorPointsHelper);
@@ -23,7 +25,9 @@ class Form {
       scene.add(this.mesh);
 
       this.createKdTree(geometry);
-      this.createFloorPoints(geometry);
+      this.createContours(geometry);
+      this.createNavMesh();
+      this.createHelper();
     });
   }
 
@@ -43,39 +47,67 @@ class Form {
     return n[0];
   }
 
-  createFloorPoints(geometry, height = 1.6, radius = 0.4) {
+  createContours(geometry, heights = [0.1, 0.9, 1.6]) {
     let v = geometry.getAttribute('position').array;
     let numPoints = v.length / 3;
-    let i, f = {}, fps = [];
+    let numFaces = numPoints / 3;
 
-    for (i = 0; i < numPoints; ++i) {
-      if (v[i * 3 + 2] > height) continue;
-      let p = new THREE.Vector3(v[i * 3], v[i * 3 + 1], 0);
-      let cp = null;
-      if (fps.some((fp, j) => {cp = j; return fp.distanceToSquared(p) < radius;})) {
-        if (cp in f) {
-          f[cp][0]++; f[cp][1].add(p);
-        } else {
-          f[cp] = [1, p];
-        }
-      } else {
-        fps.push(p);
+    let i, idx, l, lines;
+
+    this.contours = heights.map((h) => {
+      lines = [];
+      for (i = 0; i < numFaces; ++i) {
+        idx = i * 9;
+        l = contourFace(0, 0, 1, h, ...v.slice(idx, idx + 9));
+        if ( l === 0 ) continue;
+        lines.push(l);
       }
-    }
 
-    this.floorPoints = Object.keys(f).map((k) => f[k][1].divideScalar(f[k][0]));
-    this.createHelper();
+      joinLines(lines);
+
+      return lines.map((l) => {
+        let c = new THREE.Path(l.map(([x, y, z]) => new THREE.Vector2(x, y)));
+        c.closePath(); return c;
+      });
+    });
+  }
+
+  createNavMesh(border = 0.2, resolution = 120) {
+    let bb = this.geometry.boundingBox;
+    let larg = 1 + border;
+    let minx = bb.min.x * larg,
+        miny = bb.min.y * larg,
+        maxx = bb.max.x * larg,
+        maxy = bb.max.y * larg;
+
+    let navMeshShapes = this.contours.map((contour) => {
+      let shape = new THREE.Shape([
+        new THREE.Vector2(minx, miny),
+        new THREE.Vector2(minx, maxy),
+        new THREE.Vector2(maxx, maxy),
+        new THREE.Vector2(maxx, miny)
+      ]);
+      shape.closePath();
+
+      shape.holes.push(...contour.map((c) =>
+        new THREE.Path(Array.from({length: resolution}, (x, i) => {
+          let t = i/resolution, m = c.getTangent(t), p = c.getPoint(t);
+          p.addScaledVector(new THREE.Vector2(m.y, -m.x), border);
+          return p;
+        }))
+      ));
+
+      return shape;
+    });
+
+    this.navMesh = new THREE.ShapeBufferGeometry(navMeshShapes[0]);
   }
 
   createHelper(geometry, material) {
-    const cg = geometry || new THREE.BoxGeometry(1, 1, 0.1, 1);
-    const cm = material || new THREE.MeshBasicMaterial({ color: 0xff0000 });
-
-    this.floorPoints.forEach((fp) => {
-      let c = new THREE.Mesh(cg, cm);
-      c.position.set(fp.x, fp.y, 0.01);
-      this.floorPointsHelper.add(c);
-    });
+    material = material || new THREE.MeshBasicMaterial({color: 0xffffff});
+    let mesh = new THREE.Mesh(this.navMesh, material);
+    mesh.position.set(0, 0, 0.01);
+    this.floorPointsHelper.add(mesh);
   }
 
   toggleHelper() {
