@@ -1,4 +1,6 @@
 const loader = new THREE.STLLoader();
+const modifier = new THREE.SimplifyModifier();
+const ZONE = '_';
 
 class Form {
   constructor(scene) {
@@ -7,6 +9,7 @@ class Form {
     this.kdtree = null;
     this.contours = [];
     this.navMesh = null;
+    this.path = new THREE.Pathfinding();
 
     this.floorPointsHelper = new THREE.Group();
     this.floorPointsHelper.visible = false;
@@ -27,6 +30,7 @@ class Form {
       this.createKdTree(geometry);
       this.createContours(geometry);
       this.createNavMesh();
+      this.initPathfinding();
       this.createHelper();
 
       scene.ready = true;
@@ -77,11 +81,11 @@ class Form {
 
   createNavMesh(border = 0.2, resolution = 0.3) {
     let bb = this.geometry.boundingBox;
-    let larg = 2;
-    let minx = bb.min.x * larg,
-        miny = bb.min.y * larg,
-        maxx = bb.max.x * larg,
-        maxy = bb.max.y * larg;
+    let larg = 1 + border;
+    let minx = bb.min.x - larg,
+        miny = bb.min.y - larg,
+        maxx = bb.max.x + larg,
+        maxy = bb.max.y + larg;
 
     let i, j, x, y, n, a, b, c, d, idx;
     let xw = 0, yw = 0;
@@ -134,8 +138,22 @@ class Form {
     }
   }
 
+  initPathfinding() {
+    this.navMesh = modifier.modify(this.navMesh, 1770);
+    let measureStart = new Date().getTime();
+    let zone = THREE.Pathfinding.createZone(this.navMesh);
+    console.log('nav mesh took', new Date().getTime() - measureStart, 'ms to build');
+    this.path.setZoneData(ZONE, zone);
+  }
+
+  findPath(start, end) {
+    let e = this.path.getClosestNode(end, ZONE, 0);
+    return this.path.findPath(start, e.centroid, ZONE, 0);
+  }
+
   createHelper(geometry, material) {
     material = material || new THREE.MeshBasicMaterial({color: 0xffffff});
+    material.wireframe = true;
     let mesh = new THREE.Mesh(this.navMesh, material);
     mesh.position.set(0, 0, 0.01);
     this.floorPointsHelper.add(mesh);
