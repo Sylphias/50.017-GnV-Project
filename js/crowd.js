@@ -11,12 +11,14 @@ const states = {
 };
 
 class Human {
-  constructor() {
+  constructor(id = 0) {
     this.towards = new THREE.Vector3();
     this.velocity = new THREE.Vector3();
     this.speed = 0;
 
+    this.id = id;
     this.goal = null;
+    this.waitSince = null;
 
     this.geometry = new THREE.CylinderBufferGeometry(1, 1, 1, 6);
     this.geometry.applyMatrix(HTRANS);
@@ -56,6 +58,7 @@ class Human {
 
     let forward = Math.random() > 0.5;
     this.towards.set(this.getX(!forward), this.getY(), 0);
+    this.forward = forward;
     this.selectGoal();
 
     this.mesh.scale.set(w, w, h);
@@ -65,6 +68,7 @@ class Human {
 
     this.planPath();
     this.state = states.PATH;
+    this.material.color.set(0xffff00);
   }
 
   remove() {
@@ -76,7 +80,7 @@ class Human {
     this.helper.visible = !this.helper.visible;
   }
 
-  update(dt, pairwiseDist = []) {
+  update(dt) {
     if ( ! this.site.bounds.containsPoint(this.position) ) {
       this.remove(); // left bounds
       return;
@@ -94,21 +98,45 @@ class Human {
 
     switch ( this.state ) {
       case states.PATH:
+        this.material.color.set(0xffff00);
+        this.accelerate(1.2);
         this.followPath();
+        this.preventCollisions();
         break;
       case states.WAIT:
-        if ( this.speed > this.minSpeed ) this.speed *= 0.8;
-        if ( Math.random() > 0.7 ) this.state = states.PATH;
+        this.material.color.set(0x0000ff);
+        this.accelerate(0.8);
+        this.pathTime();
         break;
       case states.GOAL:
-        if ( this.speed > this.minSpeed ) this.speed *= 0.8;
-        if ( Math.random() > 0.9 ) this.state = states.PATH;
+        this.material.color.set(0x00ff00);
+        this.accelerate(0.8);
+        this.pathTime();
         break;
       default:
         this.fpsControl();
     }
 
     this.mesh.position.addScaledVector(this.velocity, this.speed * dt);
+  }
+
+  accelerate(rate) {
+    if ( rate > 1 && this.speed > this.maxSpeed ) return;
+    if ( rate < 1 && this.speed < this.minSpeed ) return;
+    this.speed *= rate;
+  }
+
+  pathTime() {
+    let now = performance.now();
+    let passed = now - this.waitSince;
+    let pathChance = (passed - this.minWait * 1000) / this.maxWait / 1000;
+    let path = Math.random() < pathChance;
+    if ( path ) this.state = states.PATH;
+  }
+
+  enterWait() {
+    this.state = states.WAIT;
+    this.waitSince = performance.now();
   }
 
   followPath(tol = 0.1) {
@@ -119,12 +147,12 @@ class Human {
       let t = this.path.shift();
       if ( this.goal && this.goal.equals(t) ) {
         this.state = states.GOAL;
-      } else if ( Math.random() > 0.7 ) {
-        this.state = states.WAIT;
+      } else if ( Math.random() > 0.9 ) {
+        this.enterWait();
       }
+      this.setPathHelper();
     } else {
       this.velocity = dir.divideScalar(dist);
-      if ( this.speed < this.maxSpeed ) this.speed *= 1.2;
     }
   }
 
@@ -163,11 +191,25 @@ class Human {
   }
 
   createPathHelper() {
+    this.helper.remove(...this.helper.children);
+
     let g = new THREE.BufferGeometry().setFromPoints(this.path);
     let m = new THREE.LineBasicMaterial({color : 0xff0000});
     let l = new THREE.Line(g, m);
     l.position.set(0, 0, 0.2);
     this.helper.add(l);
+
+    let sg = new THREE.SphereBufferGeometry(0.2);
+    let sm = new THREE.MeshBasicMaterial({color : 0xffff00});
+    this.pathTargetHelper = new THREE.Mesh(sg, sm);
+    this.helper.add(this.pathTargetHelper);
+    this.setPathHelper();
+  }
+
+  setPathHelper() {
+    if ( this.path.length === 0 ) return;
+    let t = this.path[0];
+    this.pathTargetHelper.position.set(t.x, t.y, 0.5);
   }
 
   fpsControl() {
@@ -178,6 +220,8 @@ class Human {
   }
 }
 
+Human.prototype.minWait = 1;
+Human.prototype.maxWait = 10;
 Human.prototype.maxSpin = 0.5;
 Human.prototype.minSpeed = 0.05;
 Human.prototype.maxSpeed = 1.0;
@@ -206,7 +250,7 @@ class Crowd {
     this.minSpawnTiming = 3.5;
     this.maxSpawnTiming = 10;
 
-    this.humans = Array.from({length: size}).map(() => this.newHuman());
+    this.humans = Array.from({length: size}).map((x, i) => this.newHuman(i));
   }
 
   get active() {
@@ -217,8 +261,8 @@ class Crowd {
     return this.humans.filter((h) => !h.active);
   }
 
-  newHuman() {
-    let h = new Human();
+  newHuman(id) {
+    let h = new Human(id);
     this.scene.add(h.mesh);
     this.scene.add(h.helper);
     return h;
@@ -226,19 +270,6 @@ class Crowd {
 
   toggleHelpers() {
     this.humans.forEach((h) => h.toggleHelper());
-  }
-
-  excReduce(h_id, initalValue, func) {
-    return this.active.reduce((acc, h, i) => (i === h_id) ? acc : func(acc, h, i), initalValue);
-  }
-
-  pairwiseDistance(h, h_id) {
-    return this.excReduce(h_id, [], (dists, _h) => {
-      const d = (new THREE.Vector3(0, 0, 0)).subVectors(_h.position, h.position);
-      const l = d.lengthSq();
-      if ( l < 9 ) dists.push([_h, d, l]);
-      return dists;
-    });
   }
 
   spawnTime() {
@@ -254,7 +285,8 @@ class Crowd {
     if ( ! dt ) return;
 
     this.active.forEach((h, i) => {
-      h.update(dt, this.pairwiseDistance(h, i));
+      h.others = this.active.filter((_h) => h.id !== _h.id);
+      h.update(dt);
     });
 
     if ( this.inactive.length > 0 && this.spawnTime() ) {
