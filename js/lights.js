@@ -1,3 +1,21 @@
+
+
+// Make a class for lightbulbs so that we can store multiple values of each light property
+class LightBulb{
+  constructor(position,size,hue,saturation,value){
+    this.hue = hue;
+    this.saturation = saturation;
+    this.value = value;
+    this.size = size;
+    let geometry = new THREE.BoxBufferGeometry( 0.05, 0.05, 0.05 );
+    let color = new THREE.Color("hsl("+this.hue+","+this.saturation+"%,"+this.value+"%)");
+    let material = new THREE.MeshBasicMaterial( {color: color} );
+    this.position = position
+    this.mesh = new THREE.Mesh( geometry, material );
+    this.mesh.position.set(this.position.x,this.position.y,this.position.z);
+  }
+
+}
 class Lights{
   /**
   This class will contain all the declarations for the lights in the structure
@@ -6,57 +24,57 @@ class Lights{
 
   **/
   constructor(scene,bufferGeometry,xInterval,yInterval){
+    this.lights=[];
     this.geometry = new THREE.Geometry().fromBufferGeometry(bufferGeometry);
     this.geometry.computeBoundingBox();
     this.updateIntervals(xInterval,yInterval);
     this.placeLights();
-    // this.drawPlanes(scene)
-    this.lights.forEach((light)=>{
-      scene.add(light);
-    });
-
+    // this.drawPlanes(scene);
+    this.drawContours(scene);
   }
 
   placeLights(){
     // Reset all lights and hues
-    this.lights = []
-    //
-    this.gradientHues = [];
+    // The reason why I use a 2 dimensional method to store rather than a liner
+    // index is because each slice has different number of lights.
+    this.lights = [];
     let counter = 0;
     // First take the geometry and run each face through the plane
-    this.geometry.faces.forEach((face)=>{
-      this.yPlanes.forEach((planey)=>{
+    this.yPlanes.forEach((planey)=>{
+        let xLights=[];
+        this.geometry.faces.forEach((face)=>{
         let line = this.planeIntersection(face,planey);
         if(line != 0 && line != -1){
           this.xPlanes.forEach((planex)=>{
             let pt = this.lineIntersection(line.pt1,line.pt2,planex);
             if(pt != 0 && pt != -1){
-              this.gradientHues.push(counter%360);
-              this.addLight(pt,counter%360);
-              counter += 3;
+              let lightPt = new LightBulb(pt,0.02,0,100,50);
+              scene.add(lightPt.mesh);
+              xLights.push(lightPt);
             }
           });
         }
       });
-    })
+      if(xLights.length != 0) this.lights.push(xLights);
+    });
+  }
+  // Gets all the lights
+  getLightsInX(){
+
+  }
+  getLightsInY(){
+
   }
   // Use this to initialize the starting values for each pattern. use when
   // we decide on more patterns
   initializePatternHueValues(){
 
   }
-  addLight(pt,hue){
-    var geometry = new THREE.BoxBufferGeometry( 0.05, 0.05, 0.05 );
-    let color = new THREE.Color("hsl(0,100%,50%)");
-    var material = new THREE.MeshBasicMaterial( {color: color} );
-    var cube = new THREE.Mesh( geometry, material );
-    cube.position.set(pt.x,pt.y,pt.z);
-    this.lights.push(cube);
-  }
+
 
   drawPlanes(scene){
     this.yPlanes.forEach((planey)=>{
-      let helper = new THREE.PlaneHelper(planey, 10, 0xffff00 );
+      let helper = new THREE.PlaneHelper(planey, this.geometry.boundingBox.max.y-this.geometry.boundingBox.min.y, 0xffff00 );
       scene.add(helper);
     });
     this.xPlanes.forEach((planex)=>{
@@ -71,13 +89,22 @@ class Lights{
   }
 
   drawContours(scene){
-    let lineMaterial = new THREE.LineBasicMaterial( { color: 0xffffff } );
-    let lGeo = new THREE.Geometry();
-    this.lights.forEach((light)=>{
-      lGeo.vertices.push(light.position);
-    });
-    var line = new THREE.Line(lGeo,lineMaterial);
-    scene.add(line);
+    for(let i = 0 ; i < this.lights.length; i++){
+      for(let j= 0 ; j< this.lights[i].length-1; j++){
+        let pt1 = this.lights[i][j].position;
+        let pt2 = this.lights[i][j+1].position;
+        if(pt1.distanceTo(pt2) < 2){
+          let lGeo = new THREE.Geometry();
+          lGeo.vertices.push(pt1);
+          lGeo.vertices.push(pt2);
+          let lineMaterial = new THREE.LineBasicMaterial( { color: 0xffffff } );
+          var line = new THREE.Line(lGeo,lineMaterial);
+          scene.add(line);
+        }
+      }
+
+    }
+
   }
 
 /*-------------------------------------------------------------------------
@@ -189,7 +216,7 @@ class Lights{
 
   drawCube(x,y,z,colorx=120){
     var geometry = new THREE.BoxBufferGeometry( 0.05, 0.05, 0.05 );
-    let color = new THREE.Color("hsl("+colorx%360+",100%,50%)");
+    let color = new THREE.Color("hsl("+colorx%360+",80%,80%)");
     var material = new THREE.MeshBasicMaterial( {color: color} );
     var cube = new THREE.Mesh( geometry, material );
     cube.position.set(x,y,z);
@@ -210,15 +237,15 @@ class Lights{
     }
   }
   // Currently havent mapped each light to an x y coordinate.
-  // will use the plane information to animate the lights
+  // will use the plane information to animate the lights.
   gradientPattern(){
     for(let i=0;i<this.lights.length;i++){
       this.gradientHues[i]=(this.gradientHues[i]+3)%360
-      let color = new THREE.Color("hsl("+this.gradientHues[i]+",100%,50%)");
+      let color = new THREE.Color("hsl("+this.gradientHues[i]+",60%,50%)");
       this.lights[i].material.color = color;
     }
   }
   update(){
-    this.gradientPattern();
+    // this.gradientPattern();
   }
 }
