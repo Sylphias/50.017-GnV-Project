@@ -74,6 +74,8 @@ function init() {
 }
 
 function animate() {
+  if ( ! scene.ready ) { setTimeout(animate, 500); return; }
+
   requestAnimationFrame(animate);
 
   let now = performance.now();

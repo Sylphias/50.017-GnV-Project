@@ -217,8 +217,6 @@ class Crowd {
   }
 
   update(dt) {
-    if ( ! this.scene.ready ) return;
-
     this.active.forEach((h, i) => {
       h.update(dt, this.pairwiseDistance(h, i));
     });
