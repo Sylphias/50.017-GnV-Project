@@ -101,7 +101,6 @@ class Human {
         this.material.color.set(0xffff00);
         this.accelerate(1.2);
         this.followPath();
-        this.preventCollisions();
         break;
       case states.WAIT:
         this.material.color.set(0x0000ff);
