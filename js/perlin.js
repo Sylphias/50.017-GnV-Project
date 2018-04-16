@@ -1,8 +1,11 @@
 // This is a port of Ken Perlin's Java code. The
 // original Java code is at http://cs.nyu.edu/%7Eperlin/noise/.
 // Note that in this version, a number from 0 to 1 is returned.
-PerlinNoise = new function() {
-    noise:(x, y, z)=>{
+class PerlinNoise{
+    constructor(){
+
+    }
+    static noise(x, y, z){
        var p = new Array(512)
        var permutation = [ 151,160,137,91,90,15,
        131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
@@ -18,6 +21,19 @@ PerlinNoise = new function() {
        49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
        138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
        ];
+
+       function fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+       function lerp( t, a, b) { return a + t * (b - a); }
+       function grad(hash, x, y, z) {
+          var h = hash & 15;                      // CONVERT LO 4 BITS OF HASH CODE
+          var u = h<8 ? x : y,                 // INTO 12 GRADIENT DIRECTIONS.
+                 v = h<4 ? y : h==12||h==14 ? x : z;
+          return ((h&1) == 0 ? u : -u) + ((h&2) == 0 ? v : -v);
+       }
+       function scale(n) { return (1 + n)/2;
+       }
+
+       
        for (var i=0; i < 256 ; i++){
          p[256+i] = p[i] = permutation[i];
        }
@@ -43,14 +59,5 @@ PerlinNoise = new function() {
                                  lerp(u, grad(p[AB+1], x  , y-1, z-1 ),
                                          grad(p[BB+1], x-1, y-1, z-1 )))));
        }
-       function fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
-       function lerp( t, a, b) { return a + t * (b - a); }
-       function grad(hash, x, y, z) {
-          var h = hash & 15;                      // CONVERT LO 4 BITS OF HASH CODE
-          var u = h<8 ? x : y,                 // INTO 12 GRADIENT DIRECTIONS.
-                 v = h<4 ? y : h==12||h==14 ? x : z;
-          return ((h&1) == 0 ? u : -u) + ((h&2) == 0 ? v : -v);
-       }
-       function scale(n) { return (1 + n)/2;
-       }
+
 }

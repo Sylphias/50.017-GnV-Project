@@ -15,6 +15,11 @@ class LightBulb{
     this.mesh.position.set(this.position.x,this.position.y,this.position.z);
   }
 
+  update(){
+    let color = new THREE.Color("hsl("+this.hue+","+this.saturation+"%,"+this.value+"%)");
+    this.mesh.material.color = color;
+  }
+
 }
 class Lights{
   /**
@@ -25,12 +30,15 @@ class Lights{
   **/
   constructor(scene,bufferGeometry,xInterval,yInterval){
     this.lights=[];
+    this.timeDelta = 0;
     this.geometry = new THREE.Geometry().fromBufferGeometry(bufferGeometry);
     this.geometry.computeBoundingBox();
     this.updateIntervals(xInterval,yInterval);
     this.placeLights();
     // this.drawPlanes(scene);
-    this.drawContours(scene);
+    // this.drawContours(scene);
+    // this.initializeGradientPattern();
+    this.initializePerlinPattern();
   }
 
   placeLights(){
@@ -38,13 +46,16 @@ class Lights{
     // The reason why I use a 2 dimensional method to store rather than a liner
     // index is because each slice has different number of lights.
     this.lights = [];
+    this.lineGeo = [];
     let counter = 0;
     // First take the geometry and run each face through the plane
     this.yPlanes.forEach((planey)=>{
         let xLights=[];
+        let linePt = [];
         this.geometry.faces.forEach((face)=>{
         let line = this.planeIntersection(face,planey);
         if(line != 0 && line != -1){
+          linePt.push(line.pt1,line.pt2);
           this.xPlanes.forEach((planex)=>{
             let pt = this.lineIntersection(line.pt1,line.pt2,planex);
             if(pt != 0 && pt != -1){
@@ -55,6 +66,7 @@ class Lights{
           });
         }
       });
+      this.lineGeo.push(linePt);
       if(xLights.length != 0) this.lights.push(xLights);
     });
   }
@@ -236,16 +248,50 @@ class Lights{
       this.yPlanes.push(planeY)
     }
   }
-  // Currently havent mapped each light to an x y coordinate.
-  // will use the plane information to animate the lights.
-  gradientPattern(){
-    for(let i=0;i<this.lights.length;i++){
-      this.gradientHues[i]=(this.gradientHues[i]+3)%360
-      let color = new THREE.Color("hsl("+this.gradientHues[i]+",60%,50%)");
-      this.lights[i].material.color = color;
+
+  initializeGradientPattern(){
+    for(let i = 0 ; i < this.lights.length; i++){
+      for(let j= 0 ; j< this.lights[i].length; j++){
+          this.lights[i][j].hue=(10*i)%360;
+          this.lights[i][j].update();
+        }
     }
   }
+
+  initializePerlinPattern(){
+    for(let i = 0 ; i < this.lights.length; i++){
+      for(let j= 0 ; j< this.lights[i].length; j++){
+          this.lights[i][j].hue=(10*i)%360;
+          this.lights[i][j].value=0;
+          this.lights[i][j].update();
+        }
+    }
+  }
+
+  perlinPattern(rate){
+    this.timeDelta  = this.timeDelta+rate;
+    for(let i = 0 ; i < this.lights.length; i++){
+      for(let j= 0 ; j< this.lights[i].length; j++){
+          let noise = PerlinNoise.noise(45*i,100*j,this.timeDelta);
+          // this.lights[i][j].hue=(this.lights[i][j].hue+rate*100)%360;
+          this.lights[i][j].hue=(this.lights[i][j].hue+noise*5)%360;
+          this.lights[i][j].value=Math.floor(noise*80);
+          this.lights[i][j].update();
+        }
+      }
+  }
+  // Currently havent mapped each light to an x y coordinate.
+  // will use the plane information to animate the lights.
+  gradientPattern(rate){
+    for(let i = 0 ; i < this.lights.length; i++){
+      for(let j= 0 ; j< this.lights[i].length; j++){
+          this.lights[i][j].hue=(this.lights[i][j].hue+rate)%360;
+          this.lights[i][j].update();
+        }
+      }
+  }
   update(){
-    // this.gradientPattern();
+    // this.gradientPattern(3);
+    this.perlinPattern(0.01);
   }
 }
