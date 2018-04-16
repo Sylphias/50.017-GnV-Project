@@ -27,9 +27,10 @@ class Human {
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.mesh.up = UP;
     this.mesh.isHuman = true;
-
     this.mesh.unclick = () => {};
-    this.mesh.click = () => {};
+    this.mesh.click = () => {
+      this.view.human = this;
+    };
     this.mesh.visible = false;
 
     this.helper = new THREE.Group();
@@ -76,6 +77,9 @@ class Human {
   }
 
   remove() {
+    if ( this.view.human === this ) {
+      this.view.human = ( this.others.length > 0 ) ? this.others[0] : null;
+    }
     this.mesh.visible = false;
     this.helper.remove(...this.helper.children);
   }
@@ -268,7 +272,7 @@ class Crowd {
     let h = new Human(id);
     this.scene.add(h.mesh);
     this.scene.add(h.helper);
-    this.interactiveObjects.push(h.mesh);
+    this.scene.interactiveObjects.push(h.mesh);
     return h;
   }
 

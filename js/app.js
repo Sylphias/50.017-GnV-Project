@@ -1,10 +1,7 @@
 let container, renderer, stats, gui, scene;
 let views = {};
-let interactiveObjects = [];
 let last = performance.now();
 let site, form, crowd;
-let strucView;
-let povView;
 let startX, startY;
 
 var settings = {
@@ -21,6 +18,7 @@ function init() {
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0);
+  scene.interactiveObjects = [];
   scene.ready = false;
 
   site = new Site(scene);
@@ -28,9 +26,6 @@ function init() {
 
   form = new Form(scene);
   Human.prototype.form = form;
-
-  Form.prototype.interactiveObjects = interactiveObjects;
-  Crowd.prototype.interactiveObjects = interactiveObjects;
 
   crowd = new Crowd(scene, 10);
 
@@ -58,10 +53,15 @@ function init() {
 
   let topView = new TopView(site.width);
   let freeView = new FreeView();
-  freeView.setControl(THREE.OrbitControls, renderer.domElement);
-  povView = new PovView();
-  strucView = new StrucView();
-  strucView.setControl(THREE.OrbitControls, renderer.domElement);
+  freeView.setControl(THREE.TrackballControls, renderer.domElement);
+
+  let humanView = new HumanView();
+  Human.prototype.view = humanView;
+  humanView.human = crowd.humans[0];
+
+  let formView = new FormView();
+  formView.setControl(THREE.OrbitControls, renderer.domElement);
+  form.view = formView;
 
   views.default = new Viewports();
   views.default.add(freeView, 1, 1);
@@ -74,10 +74,10 @@ function init() {
   views.top.add(topView , 1, 1);
 
   views.pov = new Viewports();
-  views.pov.add(povView, 1, 1);
+  views.pov.add(humanView, 1, 1);
 
-  views.struc = new Viewports();
-  views.struc.add(strucView, 1, 1);
+  views.form = new Viewports();
+  views.form.add(formView, 1, 1);
 
   gui.add(settings, 'currentView', Object.keys(views)).listen();
 
@@ -85,10 +85,7 @@ function init() {
 
   onWindowResize();
   window.addEventListener('resize', onWindowResize, false);
-  window.addEventListener('mousedown', () => {
-    startX = event.clientX / window.innerWidth;
-    startY = event.clientY / window.innerHeight;
-  }, false);
+  window.addEventListener('mousedown', onMouseDown, false);
   window.addEventListener('click', onClick, false);
 }
 
@@ -110,6 +107,11 @@ function animate() {
   stats.update();
 }
 
+function onMouseDown(event) {
+  startX = event.clientX / window.innerWidth;
+  startY = event.clientY / window.innerHeight;
+}
+
 function onClick(event) {
   let x = event.clientX / window.innerWidth;
   let y = event.clientY / window.innerHeight;
@@ -119,31 +121,14 @@ function onClick(event) {
   let caster = views[settings.currentView].cast(x, y);
   if ( ! caster ) return;
 
-  interactiveObjects.forEach((o) => o.unclick());
-  let h = caster.intersectObjects(interactiveObjects);
+  scene.interactiveObjects.forEach((o) => o.unclick());
+  let h = caster.intersectObjects(scene.interactiveObjects);
   if ( h.length === 0 ) return;
 
   let d = h[0], o = h[0].object;
   delete d.object;
   o.click(d);
-
-  if ( o.isHuman ) {
-    settings.currentView = 'pov';
-    povView.mesh = o;
-  } else {
-    settings.currentView = 'struc';
-    let newDir = (new THREE.Vector3()).copy(h[0].face.normal).normalize();
-    let newPos = (new THREE.Vector3()).copy(h[0].point).addScaledVector(newDir, 0.001);
-    let newAim = (new THREE.Vector3()).copy(h[0].point).addScaledVector(newDir, 0.002);
-
-    newDir.z = 0;
-    let newLook = (new THREE.Vector3()).copy(newPos).add(newDir);
-
-    strucView.camera.position.set(newPos.x, newPos.y, newPos.z);
-    strucView.camera.lookAt(newLook);
-    strucView.control.target = newAim;
-  }
-
+  settings.currentView = o.isHuman ? 'pov' : 'form';
 }
 
 function onWindowResize() {

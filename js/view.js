@@ -1,3 +1,5 @@
+const C_UP = new THREE.Vector3(0, 0, 1);
+
 class TopView {
   constructor(frustum, height = 3, near = 0.1, far = 100) {
     this.h = frustum / 2;
@@ -19,17 +21,14 @@ class TopView {
 }
 
 class FreeView {
-  constructor(fov = 75, near = 1, far = 100) {
+  constructor(fov = 75, near = 0.1, far = 100) {
     this.camera = new THREE.PerspectiveCamera(fov, 1, near, far);
     this.camera.position.z = 10;
-    this.camera.up = new THREE.Vector3(0,0,1);
     this.control = null;
   }
 
   setControl(controlType, dom) {
     this.control = new controlType(this.camera, dom);
-    this.control.panningMode = THREE.HorizontalPanning;
-    this.control.maxPolarAngle = Math.PI / 2;
   }
 
   update() {
@@ -42,20 +41,19 @@ class FreeView {
   }
 }
 
-class PovView {
-  constructor(fov = 75, near = 1, far = 100, pos = new THREE.Vector3(0, 0, 0)) {
+class HumanView {
+  constructor(fov = 75, near = 0.1, far = 100) {
     this.camera = new THREE.PerspectiveCamera(fov, 1, near, far);
-    this.camera.position.set(pos.x, pos.y, pos.z);
-    this.camera.up = new THREE.Vector3(0,0,1);
-    this.mesh = null;
+    this.camera.up = C_UP;
     this.control = null;
+    this.human = null;
   }
 
   update() {
-    let pos = new THREE.Vector3(this.mesh.position.x, this.mesh.position.y, 1.5);
-    let rot = this.mesh.rotation;
+    if ( ! this.human ) return;
+    let pos = new THREE.Vector3().copy(this.human.position);
+    pos.z = 1.5;
     this.camera.position.set(pos.x, pos.y, pos.z);
-    //this.camera.setRotationFromEuler(new THREE.Euler(0, 0, rot.z,'XYZ'));
     this.camera.lookAt(new THREE.Vector3(0,0,1.5));
   }
 
@@ -65,11 +63,10 @@ class PovView {
   }
 }
 
-class StrucView {
-  constructor(fov = 75, near = 1, far = 100, pos = new THREE.Vector3(0, 0, 0)) {
+class FormView {
+  constructor(fov = 75, near = 0.1, far = 100) {
     this.camera = new THREE.PerspectiveCamera(fov, 1, near, far);
-    this.camera.position.set(pos.x, pos.y, pos.z);
-    this.camera.up = new THREE.Vector3(0,0,1);
+    this.camera.up = C_UP;
     this.control = null;
   }
 
