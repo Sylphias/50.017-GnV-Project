@@ -3,10 +3,18 @@ const RIGHT = new THREE.Vector3(1, 0, 0);
 const ORIGIN = new THREE.Vector3(0, 0, 0);
 const HTRANS = (new THREE.Matrix4()).makeRotationX(Math.PI/2).setPosition(new THREE.Vector3(0, 0, 0.5));
 
+const states = {
+  PATH: 1,
+  WAIT: 2,
+  GOAL: 3,
+  CTRL: 0
+};
+
 class Human {
   constructor() {
     this.towards = new THREE.Vector3();
     this.velocity = new THREE.Vector3();
+    this.speed = 0;
 
     this.goal = null;
 
@@ -40,6 +48,7 @@ class Human {
 
   init() {
     this.velocity.set(0, 0, 0);
+    this.speed = 0.5;
 
     let h = (Math.random() < 0.8 ? 1.5 : 1) + Math.random() * 0.2;
     let w = (h > 1.4 ? 0.3 : 0.2) + Math.random() * 0.1;
@@ -55,11 +64,11 @@ class Human {
     this.mesh.visible = true;
 
     this.planPath();
+    this.state = states.PATH;
   }
 
   remove() {
     this.mesh.visible = false;
-    this.helper.visible = false;
     this.helper.remove(...this.helper.children);
   }
 
@@ -83,17 +92,40 @@ class Human {
       return;
     }
 
+    switch ( this.state ) {
+      case states.PATH:
+        this.followPath();
+        break;
+      case states.WAIT:
+        if ( this.speed > this.minSpeed ) this.speed *= 0.8;
+        if ( Math.random() > 0.7 ) this.state = states.PATH;
+        break;
+      case states.GOAL:
+        if ( this.speed > this.minSpeed ) this.speed *= 0.8;
+        if ( Math.random() > 0.9 ) this.state = states.PATH;
+        break;
+      default:
+        this.fpsControl();
+    }
+
+    this.mesh.position.addScaledVector(this.velocity, this.speed * dt);
+  }
+
+  followPath(tol = 0.1) {
     let dir = (new THREE.Vector3()).subVectors(this.path[0], this.position);
     let dist = dir.length();
 
-    if ( dist < 0.5 ) {
-      this.path.shift();
+    if ( dist < tol ) {
+      let t = this.path.shift();
+      if ( this.goal && this.goal.equals(t) ) {
+        this.state = states.GOAL;
+      } else if ( Math.random() > 0.7 ) {
+        this.state = states.WAIT;
+      }
     } else {
       this.velocity = dir.divideScalar(dist);
+      if ( this.speed < this.maxSpeed ) this.speed *= 1.2;
     }
-
-    this.mesh.position.addScaledVector(this.velocity, dt);
-
   }
 
   selectGoal() {
@@ -122,7 +154,6 @@ class Human {
       p.push(...this.form.findPath(this.position, this.towards));
     } else {
       p.push(...this.form.findPath(this.position, this.goal));
-      p.push(this.goal);
       p.push(...this.form.findPath(this.goal, this.towards));
     }
     p.push(this.towards);
@@ -137,6 +168,9 @@ class Human {
     let l = new THREE.Line(g, m);
     l.position.set(0, 0, 0.2);
     this.helper.add(l);
+  }
+
+  fpsControl() {
   }
 
   randDir() {
@@ -217,6 +251,8 @@ class Crowd {
   }
 
   update(dt) {
+    if ( ! dt ) return;
+
     this.active.forEach((h, i) => {
       h.update(dt, this.pairwiseDistance(h, i));
     });
