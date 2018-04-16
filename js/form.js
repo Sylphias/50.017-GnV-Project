@@ -7,13 +7,12 @@ class Form {
     this.size = new THREE.Vector3();
 
     this.kdtree = null;
-    this.contours = [];
     this.navMesh = null;
     this.path = new THREE.Pathfinding();
 
-    this.floorPointsHelper = new THREE.Group();
-    this.floorPointsHelper.visible = false;
-    scene.add(this.floorPointsHelper);
+    this.formHelper = new THREE.Group();
+    this.formHelper.visible = false;
+    scene.add(this.formHelper);
 
     this.material = new THREE.MeshLambertMaterial({color: 0xF0F0F0}) ;
 
@@ -27,18 +26,17 @@ class Form {
       this.mesh = new THREE.Mesh(this.geometry, this.material);
       scene.add(this.mesh);
 
-      this.createKdTree(geometry);
-      this.createContours(geometry);
+      this.createKdTree();
       this.createNavMesh();
       this.initPathfinding();
-      this.createHelper();
+      this.createNavMeshHelper();
 
       scene.ready = true;
     });
   }
 
-  createKdTree(geometry) {
-    let v = new Float32Array(geometry.getAttribute('position').array);
+  createKdTree() {
+    let v = new Float32Array(this.geometry.getAttribute('position').array);
     let d = (a, b) => (Math.pow(a[0]-b[0],2)+Math.pow(a[1]-b[1],2)+Math.pow(a[2]-b[2],2));
 
     let measureStart = new Date().getTime();
@@ -52,31 +50,6 @@ class Form {
     let n = this.kdtree.nearest(p, 1, 10);
     if (n.length === 0) return null;
     return n[0];
-  }
-
-  createContours(geometry, heights = [0.1, 0.9, 1.6]) {
-    let v = geometry.getAttribute('position').array;
-    let numPoints = v.length / 3;
-    let numFaces = numPoints / 3;
-
-    let i, idx, l, lines;
-
-    this.contours = heights.map((h) => {
-      lines = [];
-      for (i = 0; i < numFaces; ++i) {
-        idx = i * 9;
-        l = contourFace(0, 0, 1, h, ...v.slice(idx, idx + 9));
-        if ( l === 0 ) continue;
-        lines.push(l);
-      }
-
-      joinLines(lines);
-
-      return lines.map((l) => {
-        let c = new THREE.Path(l.map(([x, y, z]) => new THREE.Vector2(x, y)));
-        c.closePath(); return c;
-      });
-    });
   }
 
   createNavMesh(border = 0.2, resolution = 0.3) {
@@ -155,31 +128,15 @@ class Form {
     return this.path.findPath(start, e.centroid, ZONE, 0);
   }
 
-  createHelper(geometry, material) {
-    material = material || new THREE.MeshBasicMaterial({color: 0xffffff});
-    material.wireframe = true;
-    let mesh = new THREE.Mesh(this.navMesh, material);
+  createNavMeshHelper() {
+    const m = new THREE.MeshBasicMaterial({color: 0x888888, wireframe: true});
+    let mesh = new THREE.Mesh(this.navMesh, m);
     mesh.position.set(0, 0, 0.01);
-    this.floorPointsHelper.add(mesh);
+    this.formHelper.add(mesh);
   }
 
   toggleHelper() {
-    this.floorPointsHelper.visible = !this.floorPointsHelper.visible;
-  }
-
-  collide(position, radius = 0.6) {
-    let close = null, dist = null;
-    if (this.floorPoints.some((fp) => {
-      dist = fp.distanceTo(position); close = fp; return dist < radius;
-    })) {
-      return {
-        collided: true,
-        point: close,
-        distance: dist,
-        direction: (new THREE.Vector3()).subVectors(close, position)
-      };
-    }
-    return {collided: false};
+    this.formHelper.visible = !this.formHelper.visible;
   }
 
   update(dt) {
