@@ -8,6 +8,8 @@ class Human {
     this.towards = new THREE.Vector3();
     this.velocity = new THREE.Vector3();
 
+    this.goal = null;
+
     this.geometry = new THREE.CylinderBufferGeometry(1, 1, 1, 6);
     this.geometry.applyMatrix(HTRANS);
 
@@ -15,6 +17,9 @@ class Human {
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.mesh.up = UP;
     this.mesh.visible = false;
+
+    this.helper = new THREE.Group();
+    this.helper.visible = false;
   }
 
   get position() {
@@ -42,15 +47,24 @@ class Human {
 
     let forward = Math.random() > 0.5;
     this.towards.set(this.getX(!forward), this.getY(), 0);
+    this.selectGoal();
 
     this.mesh.scale.set(w, w, h);
     this.mesh.position.set(this.getX(forward), this.getY(), 0);
     this.mesh.rotation.set(0, 0, forward > 0.5 ? 0 : Math.PI);
     this.mesh.visible = true;
+
+    this.planPath();
   }
 
   remove() {
     this.mesh.visible = false;
+    this.helper.visible = false;
+    this.helper.remove(...this.helper.children);
+  }
+
+  toggleHelper() {
+    this.helper.visible = !this.helper.visible;
   }
 
   update(dt, pairwiseDist = []) {
@@ -64,89 +78,65 @@ class Human {
       return;
     }
 
-    // torque and force
-    let T = 0, F = new THREE.Vector3();
-
-    F.addScaledVector(this.randDir(), this.randWalK);
-    F.addScaledVector(this.velocity, -this.dampingK);
-
-    let towardsDir = (new THREE.Vector3()).subVectors(this.towards, this.position);
-    towardsDir.normalize();
-    F.addScaledVector(towardsDir, this.towardsK);
-
-    let people = pairwiseDist.reduce((f, h) => {
-      let dir = (new THREE.Vector3()).copy(h[1]).normalize();
-      return f.addScaledVector(dir, this.personForce(h[2]));
-    }, new THREE.Vector3());
-    F.addScaledVector(people, this.peopleK);
-
-    let n = this.form.nearest(this.position), formDir;
-    if (n) {
-      let fp = n[0].obj;
-      formDir = new THREE.Vector3(fp[0], fp[1], 0);
-      formDir.sub(this.position).normalize();
-      F.addScaledVector(formDir, this.formForce(n[1]) * this.formK);
-    } else {
-      formDir = ORIGIN;
+    if ( this.path.length == 0 ) {
+      this.remove(); // path ended
+      return;
     }
 
-    this.velocity.addScaledVector(F, this.massMult / this.mass);
+    let dir = (new THREE.Vector3()).subVectors(this.path[0], this.position);
+    let dist = dir.length();
 
-    let speed = this.velocity.length();
-    if ( speed < this.minSpeed ) {
-      this.velocity.set(0, 0, 0);
-    } else if ( speed > this.maxSpeed ) {
-      this.velocity.multiplyScalar(this.maxSpeed/speed);
-      speed = this.maxSpeed;
+    if ( dist < 0.5 ) {
+      this.path.shift();
+    } else {
+      this.velocity = dir.divideScalar(dist);
     }
 
     this.mesh.position.addScaledVector(this.velocity, dt);
 
-    let lookPos = new THREE.Vector3();
-    if ( this.velocity.dot(formDir) > 0 ) {
-      let speedRatio = (speed - this.minSpeed) / this.maxSpeed;
-      lookPos.addScaledVector(this.velocity, speedRatio);
-      lookPos.addScaledVector(formDir, 1 - speedRatio);
+  }
+
+  selectGoal() {
+    if ( Math.random() > 0.5 ) {
+      this.goal = null;
+      return;
+    }
+
+    let p = new THREE.Vector3(1 + Math.random(), this.getY(), 0)
+    this.goal = this.form.nearestValid(p);
+    this.createGoalHelper();
+  }
+
+  createGoalHelper() {
+    let m = new THREE.MeshBasicMaterial({color : 0x00ff00});
+    let g = new THREE.SphereBufferGeometry(0.2);
+    let s = new THREE.Mesh(g, m);
+    s.position.set(this.goal.x, this.goal.y, 0.5);
+    this.helper.add(s);
+  }
+
+  planPath() {
+    let p = [this.position];
+
+    if ( this.goal === null ) {
+      p.push(...this.form.findPath(this.position, this.towards));
     } else {
-      lookPos.add(this.velocity);
+      p.push(...this.form.findPath(this.position, this.goal));
+      p.push(this.goal);
+      p.push(...this.form.findPath(this.goal, this.towards));
     }
+    p.push(this.towards);
 
-    let curRot = this.mesh.rotation.z;
-    let tarRot = lookPos.angleTo(RIGHT);
-    let rotation = tarRot - curRot;
-    if (rotation <= -Math.PI) {
-      rotation += Math.PI;
-    } else if (rotation >= Math.PI) {
-      rotation -= Math.PI;
-    }
-    if ( Math.abs(rotation) > this.maxSpin ) {
-      rotation = Math.sign(rotation) * this.maxSpin;
-    }
-    if (rotation) {
-      this.mesh.rotation.set(0, 0, curRot + rotation * dt);
-    }
+    this.path = p;
+    this.createPathHelper();
   }
 
-  personForce(distSq) {
-    let mag = 0;
-    if ( distSq < 1.5 ) {
-      mag = -Math.sqrt(distSq);
-    } else if ( distSq > 4 ) {
-      mag = 0.5 / distSq;
-    }
-    return mag;
-  }
-
-  formForce(distSq) {
-    let mag = 0;
-    if ( distSq < 0.6 ) {
-      mag = -Math.sqrt(distSq);
-    } else if ( distSq < 1 ) {
-      mag = -0.1 * Math.sqrt(distSq);
-    } else if ( distSq > 9 ) {
-      mag = 0.5 / distSq;
-    }
-    return mag;
+  createPathHelper() {
+    let g = new THREE.BufferGeometry().setFromPoints(this.path);
+    let m = new THREE.LineBasicMaterial({color : 0xff0000});
+    let l = new THREE.Line(g, m);
+    l.position.set(0, 0, 0.2);
+    this.helper.add(l);
   }
 
   randDir() {
@@ -196,7 +186,12 @@ class Crowd {
   newHuman() {
     let h = new Human();
     this.scene.add(h.mesh);
+    this.scene.add(h.helper);
     return h;
+  }
+
+  toggleHelpers() {
+    this.humans.forEach((h) => h.toggleHelper());
   }
 
   excReduce(h_id, initalValue, func) {

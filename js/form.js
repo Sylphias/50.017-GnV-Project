@@ -145,6 +145,11 @@ class Form {
     this.path.setZoneData(ZONE, zone);
   }
 
+  nearestValid(point) {
+    let p = this.path.getClosestNode(point, ZONE, 0);
+    return p.centroid
+  }
+
   findPath(start, end) {
     let e = this.path.getClosestNode(end, ZONE, 0);
     return this.path.findPath(start, e.centroid, ZONE, 0);
