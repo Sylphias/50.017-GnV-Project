@@ -21,9 +21,10 @@ function init() {
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0);
+  scene.ready = false;
 
   site = new Site(scene);
-  Crowd.prototype.site = site;
+  Human.prototype.site = site;
 
   form = new Form(scene);
   Human.prototype.form = form;
@@ -92,6 +93,8 @@ function init() {
 }
 
 function animate() {
+  if ( ! scene.ready ) { setTimeout(animate, 500); return; }
+
   requestAnimationFrame(animate);
 
   let now = performance.now();
