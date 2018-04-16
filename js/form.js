@@ -96,12 +96,11 @@ class Form {
     while (x < maxx) {
       y = miny;
       while (y < maxy) {
-        n = this.nearest([x, y, 0.8]);
-        if (n !== null && n[1] < border) {
-          points.push(new THREE.Vector3(x, y, 1));
-        } else {
-          points.push(new THREE.Vector3(x, y, 0));
-        }
+        idx = [0, 0.5, 1.5].some((z) => {
+          n = this.nearest([x, y, z]);
+          return ( n !== null && n[1] < border );
+        });
+        points.push(new THREE.Vector3(x, y, idx ? 1 : 0));
         if (xw === 0){ ++yw; }
         y += resolution;
       }
