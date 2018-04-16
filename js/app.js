@@ -29,7 +29,7 @@ function init() {
   form = new Form(scene);
   Human.prototype.form = form;
 
-  form.interactiveObjects = interactiveObjects;
+  Form.prototype.interactiveObjects = interactiveObjects;
   Crowd.prototype.interactiveObjects = interactiveObjects;
 
   crowd = new Crowd(scene, 10);
@@ -85,7 +85,7 @@ function init() {
 
   onWindowResize();
   window.addEventListener('resize', onWindowResize, false);
-  window.addEventListener("mousedown", function(){
+  window.addEventListener('mousedown', () => {
     startX = event.clientX / window.innerWidth;
     startY = event.clientY / window.innerHeight;
   }, false);
@@ -114,45 +114,41 @@ function onClick(event) {
   let x = event.clientX / window.innerWidth;
   let y = event.clientY / window.innerHeight;
 
-  if (Math.sqrt(Math.pow(x - startX, 2) + Math.pow(y - startY, 2)) < 0.01) {
+  if ( Math.pow(x - startX, 2) + Math.pow(y - startY, 2) > 0.1 ) return;
 
-    let caster = views[settings.currentView].cast(x, y);
-    if (caster) {
-      interactiveObjects.forEach((o) => o.unclick());
-      let h = caster.intersectObjects(interactiveObjects);
-      if (h.length > 0) {
-        let d = h[0], o = h[0].object;
-        delete d.object;
-        o.click(d);
-        if (o.isHuman){
-          settings.currentView = 'pov';
-          povView.mesh = o;
-        }
-        else{
-          settings.currentView = 'struc';
-          // let newDir = (new THREE.Vector3()).copy(caster.ray.direction).negate().normalize();
-          // let newPos = (new THREE.Vector3()).copy(h[0].point).addScaledVector(newDir, 0.001);
-          // let newAim = (new THREE.Vector3()).copy(h[0].point).addScaledVector(newDir, 0.002);
-          let newDir = (new THREE.Vector3()).copy(h[0].face.normal).normalize();
-          let newPos = (new THREE.Vector3()).copy(h[0].point).addScaledVector(newDir, 0.001);
-          let newAim = (new THREE.Vector3()).copy(h[0].point).addScaledVector(newDir, 0.002);
+  let caster = views[settings.currentView].cast(x, y);
+  if ( ! caster ) return;
 
-          newDir.z = 0;
-          let newLook = (new THREE.Vector3()).copy(newPos).add(newDir);
-          strucView.camera.position.set(newPos.x, newPos.y, newPos.z);
-          strucView.camera.lookAt(newLook);
+  interactiveObjects.forEach((o) => o.unclick());
+  let h = caster.intersectObjects(interactiveObjects);
+  if ( h.length === 0 ) return;
 
-          strucView.control.target = newAim;
-        }
-      }
-    }
+  let d = h[0], o = h[0].object;
+  delete d.object;
+  o.click(d);
+
+  if ( o.isHuman ) {
+    settings.currentView = 'pov';
+    povView.mesh = o;
+  } else {
+    settings.currentView = 'struc';
+    let newDir = (new THREE.Vector3()).copy(h[0].face.normal).normalize();
+    let newPos = (new THREE.Vector3()).copy(h[0].point).addScaledVector(newDir, 0.001);
+    let newAim = (new THREE.Vector3()).copy(h[0].point).addScaledVector(newDir, 0.002);
+
+    newDir.z = 0;
+    let newLook = (new THREE.Vector3()).copy(newPos).add(newDir);
+
+    strucView.camera.position.set(newPos.x, newPos.y, newPos.z);
+    strucView.camera.lookAt(newLook);
+    strucView.control.target = newAim;
   }
+
 }
 
 function onWindowResize() {
   let sw = window.innerWidth;
   let sh = window.innerHeight;
   renderer.setSize(sw, sh);
-  //views[settings.currentView].setSize(sw, sh);
   Object.keys(views).forEach((k) => views[k].setSize(sw, sh));
 }

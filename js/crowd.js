@@ -268,6 +268,7 @@ class Crowd {
     let h = new Human(id);
     this.scene.add(h.mesh);
     this.scene.add(h.helper);
+    this.interactiveObjects.push(h.mesh);
     return h;
   }
 

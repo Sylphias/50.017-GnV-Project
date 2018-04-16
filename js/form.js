@@ -28,6 +28,7 @@ class Form {
       this.mesh.click = () => {};
       this.mesh.isHuman = false;
       scene.add(this.mesh);
+      this.interactiveObjects.push(this.mesh);
 
       this.createKdTree();
       this.createNavMesh();
