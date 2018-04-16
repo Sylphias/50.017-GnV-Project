@@ -1,8 +1,8 @@
 let container, renderer, stats, gui, scene;
 let views = {};
-let interactiveObjects = [];
 let last = performance.now();
 let site, form, crowd;
+let startX, startY;
 
 var settings = {
   speed: 1,
@@ -18,6 +18,7 @@ function init() {
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0);
+  scene.interactiveObjects = [];
   scene.ready = false;
 
   site = new Site(scene);
@@ -54,6 +55,14 @@ function init() {
   let freeView = new FreeView();
   freeView.setControl(THREE.TrackballControls, renderer.domElement);
 
+  let humanView = new HumanView();
+  Human.prototype.view = humanView;
+  humanView.human = crowd.humans[0];
+
+  let formView = new FormView();
+  formView.setControl(THREE.OrbitControls, renderer.domElement);
+  form.view = formView;
+
   views.default = new Viewports();
   views.default.add(freeView, 1, 1);
   views.default.add(topView , 0.3, 0.3);
@@ -64,12 +73,19 @@ function init() {
   views.top = new Viewports();
   views.top.add(topView , 1, 1);
 
-  gui.add(settings, 'currentView', Object.keys(views));
+  views.pov = new Viewports();
+  views.pov.add(humanView, 1, 1);
+
+  views.form = new Viewports();
+  views.form.add(formView, 1, 1);
+
+  gui.add(settings, 'currentView', Object.keys(views)).listen();
 
   gui.add(settings, 'speed', {pause: 0, 'x1': 1, 'x2': 2, 'x5': 5});
 
   onWindowResize();
   window.addEventListener('resize', onWindowResize, false);
+  window.addEventListener('mousedown', onMouseDown, false);
   window.addEventListener('click', onClick, false);
 }
 
@@ -91,25 +107,33 @@ function animate() {
   stats.update();
 }
 
+function onMouseDown(event) {
+  startX = event.clientX / window.innerWidth;
+  startY = event.clientY / window.innerHeight;
+}
+
 function onClick(event) {
   let x = event.clientX / window.innerWidth;
   let y = event.clientY / window.innerHeight;
 
+  if ( Math.pow(x - startX, 2) + Math.pow(y - startY, 2) > 0.1 ) return;
+
   let caster = views[settings.currentView].cast(x, y);
-  if (caster) {
-    interactiveObjects.forEach((o) => o.unclick());
-    let h = caster.intersectObjects(interactiveObjects);
-    if (h.length > 0) {
-      let d = h[0], o = h[0].object;
-      delete d.object;
-      o.click(d);
-    }
-  }
+  if ( ! caster ) return;
+
+  scene.interactiveObjects.forEach((o) => o.unclick());
+  let h = caster.intersectObjects(scene.interactiveObjects);
+  if ( h.length === 0 ) return;
+
+  let d = h[0], o = h[0].object;
+  delete d.object;
+  o.click(d);
+  settings.currentView = o.isHuman ? 'pov' : 'form';
 }
 
 function onWindowResize() {
   let sw = window.innerWidth;
   let sh = window.innerHeight;
   renderer.setSize(sw, sh);
-  views[settings.currentView].setSize(sw, sh);
+  Object.keys(views).forEach((k) => views[k].setSize(sw, sh));
 }

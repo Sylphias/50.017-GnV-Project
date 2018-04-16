@@ -1,3 +1,5 @@
+const C_UP = new THREE.Vector3(0, 0, 1);
+
 class TopView {
   constructor(frustum, height = 3, near = 0.1, far = 100) {
     this.h = frustum / 2;
@@ -19,7 +21,7 @@ class TopView {
 }
 
 class FreeView {
-  constructor(fov = 75, near = 1, far = 100) {
+  constructor(fov = 75, near = 0.1, far = 100) {
     this.camera = new THREE.PerspectiveCamera(fov, 1, near, far);
     this.camera.position.z = 10;
     this.control = null;
@@ -27,6 +29,51 @@ class FreeView {
 
   setControl(controlType, dom) {
     this.control = new controlType(this.camera, dom);
+  }
+
+  update() {
+    this.control && this.control.update();
+  }
+
+  resize(aspect) {
+    this.camera.aspect = aspect;
+    this.camera.updateProjectionMatrix();
+  }
+}
+
+class HumanView {
+  constructor(fov = 75, near = 0.1, far = 100) {
+    this.camera = new THREE.PerspectiveCamera(fov, 1, near, far);
+    this.camera.up = C_UP;
+    this.control = null;
+    this.human = null;
+  }
+
+  update() {
+    if ( ! this.human ) return;
+    let pos = new THREE.Vector3().copy(this.human.position);
+    pos.z = 1.5;
+    this.camera.position.set(pos.x, pos.y, pos.z);
+    this.camera.lookAt(new THREE.Vector3(0,0,1.5));
+  }
+
+  resize(aspect) {
+    this.camera.aspect = aspect;
+    this.camera.updateProjectionMatrix();
+  }
+}
+
+class FormView {
+  constructor(fov = 75, near = 0.1, far = 100) {
+    this.camera = new THREE.PerspectiveCamera(fov, 1, near, far);
+    this.camera.up = C_UP;
+    this.control = null;
+  }
+
+  setControl(controlType, dom) {
+    this.control = new controlType(this.camera, dom);
+    this.control.enableZoom = false;
+    this.control.enablePan = false;
   }
 
   update() {
