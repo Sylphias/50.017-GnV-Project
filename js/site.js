@@ -26,6 +26,8 @@ class Site {
 
     this.resizeFloor();
     scene.add(this.floor);
+
+    scene.background = new THREE.Color(0x0f0f18);
   }
 
   get width() {
