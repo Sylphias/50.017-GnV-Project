@@ -127,6 +127,7 @@ class Viewports {
   constructor() {
     this.views = [];
     this.lastZ = 0;
+    this.isActive = false;
   }
 
   add(view, w, h, x = 0, y = 0, z = null) {
