@@ -142,8 +142,15 @@ class Human {
   lookAngle() {
     let curRot = this.mesh.rotation.z;
     let dir = this.velocity;
-    if ( ! dir ) {
-      dir = (new THREE.Vector3()).sub(this.position);
+    if ( ! dir || ( dir.x === 0 && dir.y === 0 ) ) {
+      let n = this.form.nearest(this.position);
+      if ( n ) {
+        n = n[0].obj;
+        dir = new THREE.Vector3(n[0], n[1], 0);
+      } else {
+        dir = new THREE.Vector3();
+      }
+      dir.sub(this.position);
     }
 
     let tarRot = dir.angleTo(RIGHT);
