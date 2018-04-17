@@ -217,7 +217,7 @@ class Human {
   colliderStop() {
     let rp = new THREE.Vector3(), distSq;
     let n, fp, dir = null;
-    [0, 0.8, 1.5].forEach((h) => {
+    [0, 0.8, 1.6].forEach((h) => {
       if ( dir !== null ) return;
       rp.copy(this.position); rp.z = h;
       n = this.form.nearest(rp);
@@ -226,7 +226,7 @@ class Human {
       if ( distSq > 1 ) return;
       rp.subVectors(new THREE.Vector3(fp.obj[0], fp.obj[1], 0), this.position);
       distSq = rp.lengthSq();
-      if ( distSq > 0.1 ) return;
+      if ( distSq > 0.5 ) return;
       dir = rp;
     });
 

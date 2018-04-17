@@ -28,8 +28,11 @@ function init() {
   form = new Form(scene);
 
   Human.prototype.form = form;
+  settings.formHelpers = () => form.toggleHelper();
 
   crowd = new Crowd(scene, 10);
+  settings.crowdHelpers = () => crowd.toggleHelpers();
+
   gui = new dat.GUI({resizable: false});
 
   let guiSite = gui.addFolder('Site');
@@ -83,6 +86,8 @@ function init() {
   guiView = gui.add(settings, 'currentView', Object.keys(views)).onFinishChange(changeView);
 
   gui.add(settings, 'speed', {pause: 0, 'x1': 1, 'x2': 2, 'x5': 5});
+  gui.add(settings, 'crowdHelpers').name('crowd helpers');
+  gui.add(settings, 'formHelpers').name('form helpers');
 
   onWindowResize();
   window.addEventListener('resize', onWindowResize, false);
