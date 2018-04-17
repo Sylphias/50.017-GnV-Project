@@ -113,12 +113,12 @@ class Human {
         break;
       case states.WAIT:
         this.material.color.set(0x0000ff);
-        F.addScaledVector(this.velocity, -0.5);
+        this.velocity.multiplyScalar(0.1);
         this.pathTime();
         break;
       case states.GOAL:
         this.material.color.set(0x00ff00);
-        F.addScaledVector(this.velocity, -0.5);
+        this.velocity.multiplyScalar(0.1);
         this.pathTime();
         break;
       default:
