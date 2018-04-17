@@ -130,6 +130,7 @@ class Human {
     }
 
     F.addScaledVector(this.velocity, -this.dampingK);
+    this.colliderStop();
 
     this.velocity.addScaledVector(F, this.massMult / this.mass);
     this.velocity.clampLength(this.minSpeed, this.maxSpeed);
@@ -203,9 +204,14 @@ class Human {
       F.addScaledVector(rp, -this.peopleK / distSq);
     });
 
-    let n, fp, found = false;
+    return F;
+  }
+
+  colliderStop() {
+    let rp = new THREE.Vector3(), distSq;
+    let n, fp, dir = null;
     [0, 0.8, 1.5].forEach((h) => {
-      if ( found ) return;
+      if ( dir !== null ) return;
       rp.copy(this.position); rp.z = h;
       n = this.form.nearest(rp);
       if ( ! n ) return;
@@ -214,11 +220,12 @@ class Human {
       rp.subVectors(new THREE.Vector3(fp.obj[0], fp.obj[1], 0), this.position);
       distSq = rp.lengthSq();
       if ( distSq > 0.1 ) return;
-      found = true;
-      F.addScaledVector(rp, -this.formK / Math.sqrt(distSq));
+      dir = rp;
     });
 
-    return F;
+    if ( dir === null ) return;
+    fp = dir.dot(this.velocity) / distSq;
+    if ( fp ) this.velocity.addScaledVector(dir, -fp);
   }
 
   selectGoal() {
