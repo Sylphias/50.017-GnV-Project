@@ -17,7 +17,9 @@ class Site {
     });
 
     this.floorTexture = textureLoader.load('data/tile.png');
-    this.floorTexture.wrapS = this.floorTexture.wrapT = THREE.RepeatWrapping;
+    this.floorTexture.wrapS = THREE.MirroredRepeatWrapping;
+    this.floorTexture.wrapT = THREE.RepeatWrapping;
+    this.floorTexture.anisotropy = 8;
 
     this.floor = new THREE.Mesh(
       new THREE.PlaneBufferGeometry(),
@@ -51,7 +53,7 @@ class Site {
   resizeFloor() {
     this.bounds.setFromCenterAndSize(CENTER, this.size);
     this.floor.scale.set(this.size.x, this.size.y, this.size.z);
-    this.floorTexture.repeat.set(this.size.x, this.size.y);
+    this.floorTexture.repeat.set(this.size.x / 3, this.size.y / 3);
   }
 }
 
