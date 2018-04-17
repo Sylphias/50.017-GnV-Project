@@ -55,7 +55,6 @@ class Human {
 
   init() {
     this.velocity.set(0, 0, 0);
-    this.speed = 0.5;
 
     let h = (Math.random() < 0.8 ? 1.5 : 1) + Math.random() * 0.2;
     let w = (h > 1.4 ? 0.3 : 0.2) + Math.random() * 0.1;
@@ -104,33 +103,34 @@ class Human {
       return;
     }
 
+    let F = new THREE.Vector3();
+
     switch ( this.state ) {
       case states.PATH:
         this.material.color.set(0xffff00);
-        this.accelerate(1.2);
-        this.followPath();
+        F.add(this.followPath());
+        F.add(this.avoidCollisions());
         break;
       case states.WAIT:
         this.material.color.set(0x0000ff);
-        this.accelerate(0.8);
+        F.addScaledVector(this.velocity, -0.5);
         this.pathTime();
         break;
       case states.GOAL:
         this.material.color.set(0x00ff00);
-        this.accelerate(0.8);
+        F.addScaledVector(this.velocity, -0.5);
         this.pathTime();
         break;
       default:
         this.fpsControl();
     }
 
-    this.mesh.position.addScaledVector(this.velocity, this.speed * dt);
-  }
+    F.addScaledVector(this.velocity, -this.dampingK);
 
-  accelerate(rate) {
-    if ( rate > 1 && this.speed > this.maxSpeed ) return;
-    if ( rate < 1 && this.speed < this.minSpeed ) return;
-    this.speed *= rate;
+    this.velocity.addScaledVector(F, this.massMult / this.mass);
+    this.velocity.clampLength(this.minSpeed, this.maxSpeed);
+
+    this.mesh.position.addScaledVector(this.velocity, dt);
   }
 
   pathTime() {
@@ -147,6 +147,7 @@ class Human {
   }
 
   followPath(tol = 0.1) {
+    let F = new THREE.Vector3();
     let dir = (new THREE.Vector3()).subVectors(this.path[0], this.position);
     let dist = dir.length();
 
@@ -159,8 +160,40 @@ class Human {
       }
       this.setPathHelper();
     } else {
-      this.velocity = dir.divideScalar(dist);
+      dir.divideScalar(dist);
+      F.addScaledVector(dir, this.towardsK);
     }
+
+    return F;
+  }
+
+  avoidCollisions() {
+    let F = new THREE.Vector3();
+    let rp = new THREE.Vector3(), distSq;
+
+    this.others.forEach((h) => {
+      rp.subVectors(h.position, this.position);
+      distSq = rp.lengthSq();
+      if ( distSq > 2 ) return;
+      F.addScaledVector(rp, -this.peopleK / distSq);
+    });
+
+    let n, fp, found = false;
+    [0, 0.8, 1.5].forEach((h) => {
+      if ( found ) return;
+      rp.copy(this.position); rp.z = h;
+      n = this.form.nearest(rp);
+      if ( ! n ) return;
+      [fp, distSq] = n;
+      if ( distSq > 1 ) return;
+      rp.subVectors(new THREE.Vector3(fp.obj[0], fp.obj[1], 0), this.position);
+      distSq = rp.lengthSq();
+      if ( distSq > 0.1 ) return;
+      found = true;
+      F.addScaledVector(rp, -this.formK / Math.sqrt(distSq));
+    });
+
+    return F;
   }
 
   selectGoal() {
@@ -234,7 +267,7 @@ Human.prototype.minSpeed = 0.05;
 Human.prototype.maxSpeed = 1.0;
 Human.prototype.massMult = 0.5;
 Human.prototype.randWalK = 0.01;
-Human.prototype.towardsK = 0.02;
+Human.prototype.towardsK = 0.01;
 Human.prototype.dampingK = 0.01;
 Human.prototype.peopleK = 0.05;
 Human.prototype.formK = 0.3;
