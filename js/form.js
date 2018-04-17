@@ -14,7 +14,8 @@ class Form {
     this.formHelper.visible = false;
     scene.add(this.formHelper);
 
-    this.material = new THREE.MeshLambertMaterial({color: 0xF0F0F0}) ;
+    this.material = new THREE.MeshLambertMaterial({color: 0xFFFFFF, wireframe:true});
+    this.lightObj = null;
 
     loader.load('data/hyperbands.stl', (geometry) => {
       geometry.scale(0.1, 0.1, 0.1);
@@ -24,6 +25,10 @@ class Form {
 
       this.geometry = geometry;
       this.mesh = new THREE.Mesh(this.geometry, this.material);
+
+      // Initialize the lights
+      this.lightObj = new Lights(scene,this.geometry,0.4,0.4);
+
       this.mesh.unclick = () => {};
       this.mesh.click = (h) => {
         let d = h.face.normal.normalize();
@@ -153,5 +158,6 @@ class Form {
   }
 
   update(dt) {
+    this.lightObj && this.lightObj.update();
   }
 }
