@@ -203,6 +203,8 @@ class Lights{
         return -1; // Error, unknown condition
     }
   }
+
+  // Line intersection for second plane axis to pick a point
   lineIntersection(p1,p2,plane){
     let sideA = plane.normal.x*p1.x +plane.normal.y*p1.y+plane.normal.z*p1.z
     + plane.constant;
@@ -248,7 +250,7 @@ class Lights{
       this.yPlanes.push(planeY)
     }
   }
-
+  // Initialize functions are used to setup the lights
   initializeGradientPattern(){
     for(let i = 0 ; i < this.lights.length; i++){
       for(let j= 0 ; j< this.lights[i].length; j++){
@@ -268,6 +270,7 @@ class Lights{
     }
   }
 
+// calling pattern functions must be done in the update method.
   perlinPattern(rate){
     this.timeDelta  = this.timeDelta+rate;
     for(let i = 0 ; i < this.lights.length; i++){
@@ -280,8 +283,7 @@ class Lights{
         }
       }
   }
-  // Currently havent mapped each light to an x y coordinate.
-  // will use the plane information to animate the lights.
+
   gradientPattern(rate){
     for(let i = 0 ; i < this.lights.length; i++){
       for(let j= 0 ; j< this.lights[i].length; j++){
