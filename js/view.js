@@ -54,7 +54,7 @@ class HumanView {
     let pos = new THREE.Vector3().copy(this.human.position);
     pos.z = 1.5;
     this.camera.position.set(pos.x, pos.y, pos.z);
-    this.camera.lookAt(new THREE.Vector3(0,0,1.5));
+    this.camera.lookAt(pos.add(this.human.lookDir));
   }
 
   resize(aspect) {

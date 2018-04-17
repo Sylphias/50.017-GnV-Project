@@ -45,6 +45,10 @@ class Human {
     return this.mesh.visible;
   }
 
+  get lookDir() {
+    return (new THREE.Vector3(1, 0, 0)).applyAxisAngle(UP, this.mesh.rotation.z);
+  }
+
   getY() {
     return this.site.width * Math.random() * 0.95 + this.site.bounds.min.y;
   }
@@ -130,7 +134,28 @@ class Human {
     this.velocity.addScaledVector(F, this.massMult / this.mass);
     this.velocity.clampLength(this.minSpeed, this.maxSpeed);
 
+    this.mesh.rotateZ(this.lookAngle() * dt);
     this.mesh.position.addScaledVector(this.velocity, dt);
+  }
+
+  lookAngle() {
+    let curRot = this.mesh.rotation.z;
+    let dir = this.velocity;
+    if ( ! dir ) {
+      dir = (new THREE.Vector3()).sub(this.position);
+    }
+
+    let tarRot = dir.angleTo(RIGHT);
+    let angle = tarRot - curRot;
+
+    if ( angle >= Math.PI ) {
+      angle -= Math.PI;
+    } else if ( angle <= -Math.PI ) {
+      angle += Math.PI;
+    }
+    angle = Math.max(-this.maxSpin, Math.min(this.maxSpin, angle));
+
+    return angle || 0;
   }
 
   pathTime() {
