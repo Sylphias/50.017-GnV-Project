@@ -16,6 +16,7 @@ class LightBulb{
   }
 
   update(){
+    if ( this.hue < 0.000001 ) this.hue = 0;
     let color = new THREE.Color("hsl("+this.hue+","+this.saturation+"%,"+this.value+"%)");
     this.mesh.material.color = color;
   }
