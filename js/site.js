@@ -1,4 +1,5 @@
 const CENTER = new THREE.Vector3();
+const textureLoader = new THREE.TextureLoader();
 
 let lights = [[8, 4, 3], [-8, -4, 3]];
 
@@ -15,9 +16,12 @@ class Site {
       scene.add(pl);
     });
 
+    this.floorTexture = textureLoader.load('data/tile.png');
+    this.floorTexture.wrapS = this.floorTexture.wrapT = THREE.RepeatWrapping;
+
     this.floor = new THREE.Mesh(
       new THREE.PlaneBufferGeometry(),
-      new THREE.MeshPhongMaterial({color: 0x0f0f0f})
+      new THREE.MeshPhongMaterial({color: 0xffffff, map: this.floorTexture})
     );
 
     this.resizeFloor();
@@ -45,6 +49,7 @@ class Site {
   resizeFloor() {
     this.bounds.setFromCenterAndSize(CENTER, this.size);
     this.floor.scale.set(this.size.x, this.size.y, this.size.z);
+    this.floorTexture.repeat.set(this.size.x, this.size.y);
   }
 }
 
