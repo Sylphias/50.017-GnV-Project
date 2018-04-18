@@ -24,7 +24,7 @@ class FreeView {
   constructor(fov = 75, near = 0.1, far = 100) {
     this.camera = new THREE.PerspectiveCamera(fov, 1, near, far);
     this.camera.position.z = 10;
-    this.camera.up = new THREE.Vector3(0,0,1);
+    this.camera.up = C_UP;
     this.control = null;
   }
 
