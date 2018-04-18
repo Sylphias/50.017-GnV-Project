@@ -57,7 +57,7 @@ function init() {
 
   let topView = new TopView(site.width);
   let freeView = new FreeView();
-  freeView.setControl(THREE.TrackballControls, renderer.domElement);
+  freeView.setControl(THREE.OrbitControls, renderer.domElement);
 
   let humanView = new HumanView();
   Human.prototype.view = humanView;
