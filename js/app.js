@@ -128,10 +128,24 @@ function onMouseUp(event) {
   let dx = (event.clientX - startX) || 0;
   let dy = (event.clientY - startY) || 0;
   if ( Math.pow(dx, 2) + Math.pow(dy, 2) > 9 ) return;
+  
+  switch ( event.button ) {
+    case 0: // left 
+      let x = event.clientX / window.innerWidth;
+      let y = event.clientY / window.innerHeight;
+      globalCast(x, y);
+      break;
 
-  let x = event.clientX / window.innerWidth;
-  let y = event.clientY / window.innerHeight;
-  globalCast(x, y);
+    case 1: // middle
+      break;
+
+    case 2: // right
+      settings.currentView = 'default';
+      views['free'].views[0].view.control.reset();
+      changeView(settings.currentView);
+      break;
+  }
+
 }
 
 function globalCast(x, y) {
