@@ -78,6 +78,7 @@ function init() {
 
   views.pov = new Viewports();
   views.pov.add(humanView, 1, 1);
+  views.pov.add(topView, 0.3, 0.3, 0, 0.7);
 
   views.form = new Viewports();
   views.form.add(formView, 1, 1);
