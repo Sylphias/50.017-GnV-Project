@@ -1,8 +1,10 @@
-let container, renderer, stats, gui, scene;
-let views = {};
+let container, renderer, scene;
 let last = performance.now();
 let site, form, crowd;
 let startX, startY;
+let views = {};
+
+let gui;
 let guiView;
 
 var settings = {
@@ -46,9 +48,6 @@ function init() {
   });
 
   gui.close();
-
-  stats = new Stats();
-  container.appendChild(stats.dom);
 
   renderer = new THREE.WebGLRenderer({antialias: true});
   renderer.setPixelRatio(window.devicePixelRatio);
