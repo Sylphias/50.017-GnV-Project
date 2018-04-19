@@ -9,6 +9,7 @@ let guiView;
 
 var settings = {
   speed: 1,
+  resetView: () => resetView(),
   currentView: 'default'
 };
 
@@ -84,6 +85,7 @@ function init() {
   views.form.add(formView, 1, 1);
 
   guiView = gui.add(settings, 'currentView', Object.keys(views)).onFinishChange(changeView);
+  gui.add(settings, 'resetView').name('reset view');
 
   gui.add(settings, 'speed', {pause: 0, 'x1': 1, 'x2': 2, 'x5': 5});
   gui.add(settings, 'crowdHelpers').name('crowd helpers');
@@ -119,6 +121,12 @@ function changeView(v) {
   views[v].isActive = true;
 }
 
+function resetView() {
+  settings.currentView = 'default';
+  views['free'].views[0].view.control.reset();
+  changeView(settings.currentView);
+}
+
 function onMouseDown(event) {
   startX = event.clientX;
   startY = event.clientY;
@@ -140,9 +148,7 @@ function onMouseUp(event) {
       break;
 
     case 2: // right
-      settings.currentView = 'default';
-      views['free'].views[0].view.control.reset();
-      changeView(settings.currentView);
+      resetView();
       break;
   }
 
