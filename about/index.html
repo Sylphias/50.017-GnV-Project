@@ -13,5 +13,11 @@
     <h2>Description</h2>
     <p>We present a tool for helping installation artists with the creation of interactive and appealing night light installations. We targeted the problem of visualising animated lighting sequences and placing sensors on the installation. Our tool allows the artist to load in their preliminary phyical designs and simulate crowd movements around the installation. Following that, they can see the installation from different viewpoints and also load in the animated lighting sequences. As large-scale light installations have a long construction time, the tool will enable many iterations of testing before the physical structures are even built.</p>
     <h2>Features</h2>
+    <h3>Generation of Navigation Mesh for crowd simulation</h3>
+    <p>After loading in their physical design, a navigation mesh is generated based on the object. Navigation meshes are used by the agents in the crowd simulation for pathfinding around the structure, as shortest-path or least-effort algorithms rarely generate paths that approach closed convex spaces of the installation. The navigation mesh indicates where the traversable area around the structure are. To define the traversable area, first we define the <i>collision volume</i>, which is the set of all points along the installation that are below the average human height (1.6 metres). The traversable area is then defined to be the overhead projection the collision volume, offset outwards by a certain radius (Minkowski sum). This definition allows crowd agents to walk under parts of the installation that are above human height.</p>
+    <h3>Generation of light placement and control</h3>
+    <p>We assume that the light installation will be lit with individually addressable RGB LED strips placed along the structure. This is currently the most versatile way as it allows precice colour control at points along the installation.</p>
+    <h3>Point of View Cameras</h3>
+    <p>To allow a good sense of what the installation would look like after it is completed, the user is able to go into a crowd agent's point of view.</p>
   </body>
 </html>
