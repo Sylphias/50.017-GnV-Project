@@ -3,6 +3,7 @@ let last = performance.now();
 let site, form, crowd;
 let startX, startY;
 let views = {};
+let stats;
 
 let gui;
 let guiView;
@@ -26,27 +27,10 @@ function init() {
   scene.ready = false;
 
   site = new Site(scene);
-  Human.prototype.site = site;
 
   form = new Form(scene);
 
-  Human.prototype.form = form;
-  settings.formHelpers = () => form.toggleHelper();
-
-  crowd = new Crowd(scene, 10);
-  settings.crowdHelpers = () => crowd.toggleHelpers();
-
   gui = new dat.GUI({resizable: false});
-
-  let guiSite = gui.addFolder('Site');
-  Object.keys(siteParams).forEach((k) => {
-    guiSite.add(site, k, ...siteParams[k]);
-  });
-
-  let guiHuman = gui.addFolder('Humans');
-  Object.keys(humanParams).forEach((k) => {
-    guiHuman.add(Human.prototype, k, ...humanParams[k]);
-  });
 
   gui.close();
 
@@ -55,13 +39,12 @@ function init() {
   renderer.autoClearColor = false;
   container.appendChild(renderer.domElement);
 
+  stats = new Stats();
+  container.appendChild(stats.dom);
+
   let topView = new TopView(site.width);
   let freeView = new FreeView();
   freeView.setControl(THREE.OrbitControls, renderer.domElement);
-
-  let humanView = new HumanView();
-  Human.prototype.view = humanView;
-  humanView.human = crowd.humans[0];
 
   let formView = new FormView();
   formView.setControl(THREE.OrbitControls, renderer.domElement);
@@ -77,19 +60,12 @@ function init() {
   views.top = new Viewports();
   views.top.add(topView , 1, 1);
 
-  views.pov = new Viewports();
-  views.pov.add(humanView, 1, 1);
-  views.pov.add(topView, 0.3, 0.3, 0, 0.7);
-
   views.form = new Viewports();
   views.form.add(formView, 1, 1);
 
   guiView = gui.add(settings, 'currentView', Object.keys(views)).onFinishChange(changeView);
   gui.add(settings, 'resetView').name('reset view');
-
   gui.add(settings, 'speed', {pause: 0, 'x1': 1, 'x2': 2, 'x5': 5});
-  gui.add(settings, 'crowdHelpers').name('crowd helpers');
-  gui.add(settings, 'formHelpers').name('form helpers');
 
   onWindowResize();
   window.addEventListener('resize', onWindowResize, false);
@@ -100,8 +76,7 @@ function init() {
 function animate() {
   if ( ! scene.ready ) { setTimeout(animate, 500); return; }
 
-  requestAnimationFrame(animate);
-
+  stats.begin();
   let now = performance.now();
   let dt = (now - last) / 1000;
   if (dt > 1) dt = 1; // safety cap
@@ -110,8 +85,10 @@ function animate() {
   dt *= settings.speed;
 
   form.update(dt);
-  crowd.update(dt);
   views[settings.currentView].render(scene, renderer);
+  stats.end();
+
+  requestAnimationFrame(animate);
 }
 
 function changeView(v) {
@@ -123,7 +100,7 @@ function changeView(v) {
 
 function resetView() {
   settings.currentView = 'default';
-  views['free'].views[0].view.control.reset();
+  views.free.views[0].view.control.reset();
   changeView(settings.currentView);
 }
 
