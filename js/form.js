@@ -6,6 +6,11 @@ class Form {
   constructor(scene) {
     this.size = new THREE.Vector3();
 
+    this.material = new THREE.MeshLambertMaterial({
+      color: 0xFFFFFF, opacity: 0.6, transparent: true, side: THREE.DoubleSide
+    });
+
+    this.lights = null;
     this.kdtree = null;
     this.navMesh = null;
     this.path = new THREE.Pathfinding();
@@ -14,20 +19,18 @@ class Form {
     this.formHelper.visible = false;
     scene.add(this.formHelper);
 
-    this.material = new THREE.MeshLambertMaterial({color: 0xFFFFFF, wireframe:true});
-    this.lightObj = null;
-
     loader.load('data/hyperbands.stl', (geometry) => {
-      geometry.scale(0.1, 0.1, 0.1);
+      geometry.scale(0.001, 0.001, 0.001);
       geometry.computeBoundingBox();
       geometry.boundingBox.getSize(this.size);
       geometry.translate(-this.size.x / 2, -this.size.y / 2, 0);
+      geometry.translate(-2, 2, 0);
+      geometry.rotateZ(-0.4);
 
       this.geometry = geometry;
       this.mesh = new THREE.Mesh(this.geometry, this.material);
 
-      // Initialize the lights
-      this.lightObj = new Lights(scene,this.geometry,0.4,0.4);
+      this.lights = new Lights(scene, this.geometry, 0.3, 0.4);
 
       this.mesh.unclick = () => {};
       this.mesh.click = (h) => {
@@ -40,6 +43,7 @@ class Form {
         this.view.camera.lookAt(p.add(d));
         this.view.control.target = a;
       };
+
       this.mesh.isHuman = false;
       scene.add(this.mesh);
       scene.interactiveObjects.push(this.mesh);
@@ -47,7 +51,6 @@ class Form {
       this.createKdTree();
       this.createNavMesh();
       this.initPathfinding();
-      this.createNavMeshHelper();
 
       scene.ready = true;
     });
@@ -70,7 +73,7 @@ class Form {
     return n[0];
   }
 
-  createNavMesh(border = 0.2, resolution = 0.3) {
+  createNavMesh(border = 0.1, resolution = 0.2) {
     let bb = this.geometry.boundingBox;
     let larg = 1 + border;
     let minx = bb.min.x - larg,
@@ -126,10 +129,16 @@ class Form {
         }
       }
     }
+
+    this.navMesh = modifier.modify(this.navMesh, 1850);
+
+    const m = new THREE.MeshBasicMaterial({color: 0x888888, wireframe: true});
+    let mesh = new THREE.Mesh(this.navMesh, m);
+    mesh.position.set(0, 0, 0.01);
+    this.formHelper.add(mesh);
   }
 
   initPathfinding() {
-    this.navMesh = modifier.modify(this.navMesh, 1770);
     let measureStart = new Date().getTime();
     let zone = THREE.Pathfinding.createZone(this.navMesh);
     console.log('nav mesh took', new Date().getTime() - measureStart, 'ms to build');
@@ -146,18 +155,11 @@ class Form {
     return this.path.findPath(start, e.centroid, ZONE, 0);
   }
 
-  createNavMeshHelper() {
-    const m = new THREE.MeshBasicMaterial({color: 0x888888, wireframe: true});
-    let mesh = new THREE.Mesh(this.navMesh, m);
-    mesh.position.set(0, 0, 0.01);
-    this.formHelper.add(mesh);
-  }
-
   toggleHelper() {
     this.formHelper.visible = !this.formHelper.visible;
   }
 
   update(dt) {
-    this.lightObj && this.lightObj.update();
+    this.lights && this.lights.update();
   }
 }

@@ -50,7 +50,7 @@ class Human {
   }
 
   getY() {
-    return this.site.width * Math.random() * 0.95 + this.site.bounds.min.y;
+    return this.site.size.y * Math.random() * 0.95 + this.site.bounds.min.y;
   }
 
   getX(forward) {
@@ -61,7 +61,7 @@ class Human {
     this.velocity.set(0, 0, 0);
 
     let h = (Math.random() < 0.8 ? 1.5 : 1) + Math.random() * 0.2;
-    let w = (h > 1.4 ? 0.3 : 0.2) + Math.random() * 0.1;
+    let w = (h > 1.4 ? 0.2 : 0.1) + Math.random() * 0.1;
     this.mass = w * w * h;
 
     let forward = Math.random() > 0.5;
