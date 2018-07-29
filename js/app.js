@@ -27,8 +27,14 @@ function init() {
   scene.ready = false;
 
   site = new Site(scene);
+  Human.prototype.site = site;
+  settings.crowdHelpers = () => crowd.toggleHelpers();
 
   form = new Form(scene);
+  Human.prototype.form = form;
+  settings.formHelper = () => form.toggleHelper();
+
+  crowd = new Crowd(scene, 10);
 
   gui = new dat.GUI({resizable: false});
 
@@ -42,7 +48,11 @@ function init() {
   stats = new Stats();
   container.appendChild(stats.dom);
 
-  let topView = new TopView(site.width);
+  let humanView = new HumanView();
+  Human.prototype.view = humanView;
+  humanView.human = crowd.humans[0];
+
+  let topView = new TopView(site.size.y);
   let freeView = new FreeView();
   freeView.setControl(THREE.OrbitControls, renderer.domElement);
 
@@ -60,12 +70,18 @@ function init() {
   views.top = new Viewports();
   views.top.add(topView , 1, 1);
 
+  views.pov = new Viewports();
+  views.pov.add(humanView, 1, 1);
+  views.pov.add(topView, 0.3, 0.3, 0, 0.7);
+
   views.form = new Viewports();
   views.form.add(formView, 1, 1);
 
   guiView = gui.add(settings, 'currentView', Object.keys(views)).onFinishChange(changeView);
   gui.add(settings, 'resetView').name('reset view');
   gui.add(settings, 'speed', {pause: 0, 'x1': 1, 'x2': 2, 'x5': 5});
+  gui.add(settings, 'crowdHelpers').name('show crowd path');
+  gui.add(settings, 'formHelper').name('show nav mesh');
 
   onWindowResize();
   window.addEventListener('resize', onWindowResize, false);
@@ -85,6 +101,7 @@ function animate() {
   dt *= settings.speed;
 
   form.update(dt);
+  crowd.update(dt);
   views[settings.currentView].render(scene, renderer);
   stats.end();
 

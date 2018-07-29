@@ -1,5 +1,6 @@
 const loader = new THREE.STLLoader();
 const modifier = new THREE.SimplifyModifier();
+const ZONE = '_';
 
 class Form {
   constructor(scene) {
@@ -11,6 +12,7 @@ class Form {
 
     this.kdtree = null;
     this.navMesh = null;
+    this.path = new THREE.Pathfinding();
 
     this.formHelper = new THREE.Group();
     this.formHelper.visible = false;
@@ -45,6 +47,7 @@ class Form {
 
       this.createKdTree();
       this.createNavMesh();
+      this.initPathfinding();
 
       scene.ready = true;
     });
@@ -130,6 +133,23 @@ class Form {
     let mesh = new THREE.Mesh(this.navMesh, m);
     mesh.position.set(0, 0, 0.01);
     this.formHelper.add(mesh);
+  }
+
+  initPathfinding() {
+    let measureStart = new Date().getTime();
+    let zone = THREE.Pathfinding.createZone(this.navMesh);
+    console.log('nav mesh took', new Date().getTime() - measureStart, 'ms to build');
+    this.path.setZoneData(ZONE, zone);
+  }
+
+  nearestValid(point) {
+    let p = this.path.getClosestNode(point, ZONE, 0);
+    return p.centroid
+  }
+
+  findPath(start, end) {
+    let e = this.path.getClosestNode(end, ZONE, 0);
+    return this.path.findPath(start, e.centroid, ZONE, 0);
   }
 
   toggleHelper() {
