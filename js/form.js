@@ -10,6 +10,7 @@ class Form {
       color: 0xFFFFFF, opacity: 0.6, transparent: true, side: THREE.DoubleSide
     });
 
+    this.lights = null;
     this.kdtree = null;
     this.navMesh = null;
     this.path = new THREE.Pathfinding();
@@ -28,6 +29,8 @@ class Form {
 
       this.geometry = geometry;
       this.mesh = new THREE.Mesh(this.geometry, this.material);
+
+      this.lights = new Lights(scene, this.geometry, 0.3, 0.4);
 
       this.mesh.unclick = () => {};
       this.mesh.click = (h) => {
@@ -157,5 +160,6 @@ class Form {
   }
 
   update(dt) {
+    this.lights && this.lights.update();
   }
 }

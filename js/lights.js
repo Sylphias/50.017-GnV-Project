@@ -7,7 +7,7 @@ class LightBulb{
     this.saturation = saturation;
     this.value = value;
     this.size = size;
-    let geometry = new THREE.BoxBufferGeometry( 0.05, 0.05, 0.05 );
+    let geometry = new THREE.BoxBufferGeometry(size, size, size);
     let color = new THREE.Color("hsl("+this.hue+","+this.saturation+"%,"+this.value+"%)");
     let material = new THREE.MeshBasicMaterial( {color: color} );
     this.position = position

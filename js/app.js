@@ -48,13 +48,13 @@ function init() {
   stats = new Stats();
   container.appendChild(stats.dom);
 
-  let humanView = new HumanView();
-  Human.prototype.view = humanView;
-  humanView.human = crowd.humans[0];
-
   let topView = new TopView(site.size.y);
   let freeView = new FreeView();
   freeView.setControl(THREE.OrbitControls, renderer.domElement);
+
+  let humanView = new HumanView();
+  Human.prototype.view = humanView;
+  humanView.human = crowd.humans[0];
 
   let formView = new FormView();
   formView.setControl(THREE.OrbitControls, renderer.domElement);
